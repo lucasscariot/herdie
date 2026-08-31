@@ -23,7 +23,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(session.connectRequests[0].columns, 100)
     }
 
-    func testUnknownHostRequiresApprovalAndReconnectsWithPinnedKey() throws {
+    func testUnknownHostRequiresApprovalAndReconnectsWithPinnedKey() async throws {
         let connection = SavedConnection.fixture()
         let repository = InMemoryConnectionRepository(connections: [connection])
         let vault = InMemoryCredentialVault()
@@ -37,7 +37,7 @@ final class TerminalViewModelTests: XCTestCase {
         try model.connect(columns: 80, rows: 24)
         session.events.append(.hostKeyUnknown(presented: "SHA256:new"))
 
-        model.poll()
+        await model.poll()
         XCTAssertEqual(model.pendingHostKey?.presented, "SHA256:new")
 
         try model.approvePendingHostKey()
@@ -47,7 +47,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(try repository.load().first?.hostKeyFingerprint, "SHA256:new")
     }
 
-    func testToolbarAndControlLatchSendTerminalBytes() throws {
+    func testToolbarAndControlLatchSendTerminalBytes() async throws {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -56,7 +56,7 @@ final class TerminalViewModelTests: XCTestCase {
             session: session
         )
         session.events.append(.stateChanged(.attached))
-        model.poll()
+        await model.poll()
 
         model.perform(.escape)
         model.perform(.tab)
@@ -82,7 +82,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(session.disconnectReasons, [.appSuspended])
     }
 
-    func testResumePollsTheSuspensionTransitionAndReconnects() throws {
+    func testResumePollsTheSuspensionTransitionAndReconnects() async throws {
         let session = InMemorySessionClient()
         let scheduler = ManualReconnectScheduler()
         let model = TerminalViewModel(
@@ -96,7 +96,7 @@ final class TerminalViewModelTests: XCTestCase {
         model.suspend()
         session.events.append(.stateChanged(.reconnecting))
 
-        model.resume()
+        await model.resume()
         XCTAssertEqual(session.connectRequests.count, 1)
 
         scheduler.runNext()
@@ -104,7 +104,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(session.connectRequests.count, 2)
     }
 
-    func testActiveNetworkInterruptionReconnectsOnce() throws {
+    func testActiveNetworkInterruptionReconnectsOnce() async throws {
         let session = InMemorySessionClient()
         let scheduler = ManualReconnectScheduler()
         let model = TerminalViewModel(
@@ -117,7 +117,7 @@ final class TerminalViewModelTests: XCTestCase {
         try model.connect(columns: 80, rows: 24)
         session.events.append(.stateChanged(.reconnecting))
 
-        model.poll()
+        await model.poll()
         XCTAssertEqual(session.connectRequests.count, 1)
 
         scheduler.runNext()
@@ -125,7 +125,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(session.connectRequests.count, 2)
     }
 
-    func testReconnectPolicyStopsAfterFourDelayedAttempts() throws {
+    func testReconnectPolicyStopsAfterFourDelayedAttempts() async throws {
         let session = InMemorySessionClient()
         let scheduler = ManualReconnectScheduler()
         let model = TerminalViewModel(
@@ -139,19 +139,19 @@ final class TerminalViewModelTests: XCTestCase {
 
         for _ in 0..<4 {
             session.events.append(.stateChanged(.reconnecting))
-            model.poll()
+            await model.poll()
             XCTAssertTrue(scheduler.hasPendingAction)
             scheduler.runNext()
         }
         session.events.append(.stateChanged(.reconnecting))
-        model.poll()
+        await model.poll()
 
         XCTAssertFalse(scheduler.hasPendingAction)
         XCTAssertEqual(session.connectRequests.count, 5)
         XCTAssertNotNil(model.errorMessage)
     }
 
-    func testShortLivedAttachmentsDoNotResetTheReconnectBudget() throws {
+    func testShortLivedAttachmentsDoNotResetTheReconnectBudget() async throws {
         let session = InMemorySessionClient()
         let scheduler = ManualReconnectScheduler()
         let model = TerminalViewModel(
@@ -165,19 +165,19 @@ final class TerminalViewModelTests: XCTestCase {
 
         for _ in 0..<4 {
             session.events.append(.stateChanged(.reconnecting))
-            model.poll()
+            await model.poll()
             scheduler.runNext()
             session.events.append(.stateChanged(.attached))
-            model.poll()
+            await model.poll()
         }
         session.events.append(.stateChanged(.reconnecting))
-        model.poll()
+        await model.poll()
 
         XCTAssertFalse(scheduler.hasPendingAction)
         XCTAssertEqual(session.connectRequests.count, 5)
     }
 
-    func testRemoteExitDoesNotScheduleAReconnect() throws {
+    func testRemoteExitDoesNotScheduleAReconnect() async throws {
         let session = InMemorySessionClient()
         let scheduler = ManualReconnectScheduler()
         let model = TerminalViewModel(
@@ -193,13 +193,13 @@ final class TerminalViewModelTests: XCTestCase {
             .stateChanged(.idle)
         ])
 
-        model.poll()
+        await model.poll()
 
         XCTAssertFalse(scheduler.hasPendingAction)
         XCTAssertEqual(session.connectRequests.count, 1)
     }
 
-    func testManualRetryClearsTheErrorAndStartsANewConnection() throws {
+    func testManualRetryClearsTheErrorAndStartsANewConnection() async throws {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -212,7 +212,7 @@ final class TerminalViewModelTests: XCTestCase {
             .error("SSH connection failed: host not found"),
             .stateChanged(.idle)
         ])
-        model.poll()
+        await model.poll()
 
         model.retry()
 
@@ -220,7 +220,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(session.connectRequests.count, 2)
     }
 
-    func testDisconnectedTerminalOperationsPreserveTheConnectionFailure() throws {
+    func testDisconnectedTerminalOperationsPreserveTheConnectionFailure() async throws {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -233,7 +233,7 @@ final class TerminalViewModelTests: XCTestCase {
             .error("SSH connection failed: host not found"),
             .stateChanged(.idle)
         ])
-        model.poll()
+        await model.poll()
 
         model.resize(columns: 100, rows: 30)
         model.sendText("pwd\n")
@@ -242,10 +242,27 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(model.errorMessage, "SSH connection failed: host not found")
         XCTAssertTrue(session.sizes.isEmpty)
         XCTAssertTrue(session.sent.isEmpty)
-        XCTAssertTrue(session.scrollOffsets.isEmpty)
+        XCTAssertTrue(session.scrollDeltas.isEmpty)
     }
 
-    func testResizeDuringConnectionIsAppliedAfterAttachment() throws {
+    func testAttachedConversationScrollForwardsSignedRowsToTheRemoteTerminal() async {
+        let session = InMemorySessionClient()
+        let model = TerminalViewModel(
+            connection: .fixture(),
+            repository: InMemoryConnectionRepository(),
+            credentialVault: InMemoryCredentialVault(),
+            session: session
+        )
+        session.events.append(.stateChanged(.attached))
+        await model.poll()
+
+        model.scroll(by: 3)
+        model.scroll(by: -2)
+
+        XCTAssertEqual(session.scrollDeltas, [3, -2])
+    }
+
+    func testResizeDuringConnectionIsAppliedAfterAttachment() async throws {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -255,20 +272,20 @@ final class TerminalViewModelTests: XCTestCase {
         )
         try model.connect(columns: 80, rows: 24)
         session.events.append(.stateChanged(.connecting))
-        model.poll()
+        await model.poll()
 
         model.resize(columns: 100, rows: 30)
         XCTAssertTrue(session.sizes.isEmpty)
 
         session.events.append(.stateChanged(.attached))
-        model.poll()
+        await model.poll()
 
         XCTAssertEqual(session.sizes.count, 1)
         XCTAssertEqual(session.sizes.first?.0, 100)
         XCTAssertEqual(session.sizes.first?.1, 30)
     }
 
-    func testControlLatchIsConsumedByANonTextInputSequence() {
+    func testControlLatchIsConsumedByANonTextInputSequence() async {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -277,7 +294,7 @@ final class TerminalViewModelTests: XCTestCase {
             session: session
         )
         session.events.append(.stateChanged(.attached))
-        model.poll()
+        await model.poll()
         model.perform(.control)
 
         model.sendInput(Data([0x1B, 0x5B, 0x41]))
@@ -286,7 +303,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertFalse(model.controlArmed)
     }
 
-    func testAutoSendSendsOneCompletedComposerLine() {
+    func testAutoSendSendsOneCompletedComposerLine() async {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -295,7 +312,7 @@ final class TerminalViewModelTests: XCTestCase {
             session: session
         )
         session.events.append(.stateChanged(.attached))
-        model.poll()
+        await model.poll()
         model.composerDraft = "hello from dictation\n"
 
         model.autoSendComposerIfNeeded(isEnabled: true)
@@ -304,7 +321,7 @@ final class TerminalViewModelTests: XCTestCase {
         XCTAssertEqual(model.composerDraft, "")
     }
 
-    func testWorkspaceActionsUseTheHerdrPrefixSequences() {
+    func testWorkspaceActionsUseTheHerdrPrefixSequences() async {
         let session = InMemorySessionClient()
         let model = TerminalViewModel(
             connection: .fixture(),
@@ -313,7 +330,7 @@ final class TerminalViewModelTests: XCTestCase {
             session: session
         )
         session.events.append(.stateChanged(.attached))
-        model.poll()
+        await model.poll()
 
         model.switchWorkspacePrevious()
         model.switchWorkspaceNext()

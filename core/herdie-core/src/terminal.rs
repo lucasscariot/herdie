@@ -40,6 +40,17 @@ pub struct TerminalSnapshot {
     pub text: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
+pub struct TerminalUpdate {
+    pub columns: u16,
+    pub rows: u16,
+    pub scrollback_offset: u32,
+    pub cursor: CursorSnapshot,
+    pub cells: Vec<CellSnapshot>,
+    pub text: String,
+    pub full: bool,
+}
+
 impl TerminalSnapshot {
     pub fn cell(&self, row: u16, column: u16) -> Option<&CellSnapshot> {
         if row >= self.rows || column >= self.columns {
@@ -78,6 +89,7 @@ pub struct TerminalModel {
     parser: vt100::Parser,
     columns: u16,
     rows: u16,
+    previous_snapshot: Option<TerminalSnapshot>,
 }
 
 impl TerminalModel {
@@ -88,6 +100,7 @@ impl TerminalModel {
             parser: vt100::Parser::new(safe_rows, safe_columns, scrollback),
             columns: safe_columns,
             rows: safe_rows,
+            previous_snapshot: None,
         }
     }
 
@@ -161,6 +174,63 @@ impl TerminalModel {
         serde_json::to_string(&self.snapshot()).map_err(|error| CoreError::SnapshotEncoding {
             message: error.to_string(),
         })
+    }
+
+    pub fn take_update(&mut self) -> Option<TerminalUpdate> {
+        let snapshot = self.snapshot();
+        let full = self.previous_snapshot.as_ref().is_none_or(|previous| {
+            previous.columns != snapshot.columns || previous.rows != snapshot.rows
+        });
+        let cells = if full {
+            snapshot.cells.clone()
+        } else {
+            snapshot
+                .cells
+                .iter()
+                .zip(
+                    self.previous_snapshot
+                        .as_ref()
+                        .map(|previous| previous.cells.as_slice())
+                        .unwrap_or_default(),
+                )
+                .filter(|(cell, previous)| cell != previous)
+                .map(|(cell, _)| cell.clone())
+                .collect()
+        };
+        let metadata_changed = self.previous_snapshot.as_ref().is_none_or(|previous| {
+            previous.cursor != snapshot.cursor
+                || previous.scrollback_offset != snapshot.scrollback_offset
+                || previous.text != snapshot.text
+        });
+        if !full && cells.is_empty() && !metadata_changed {
+            return None;
+        }
+        let update = TerminalUpdate {
+            columns: snapshot.columns,
+            rows: snapshot.rows,
+            scrollback_offset: snapshot.scrollback_offset,
+            cursor: snapshot.cursor,
+            cells,
+            text: snapshot.text.clone(),
+            full,
+        };
+        self.previous_snapshot = Some(snapshot);
+        Some(update)
+    }
+
+    pub fn mouse_wheel_input(&self, lines: i32) -> Vec<u8> {
+        const MAX_WHEEL_NOTCHES: u32 = 32;
+
+        if lines == 0 {
+            return Vec::new();
+        }
+        let button = if lines > 0 { 64 } else { 65 };
+        let column = self.columns / 2 + 1;
+        let row = self.rows / 2 + 1;
+        let sequence = format!("\x1b[<{button};{column};{row}M");
+        sequence
+            .repeat(lines.unsigned_abs().min(MAX_WHEEL_NOTCHES) as usize)
+            .into_bytes()
     }
 }
 

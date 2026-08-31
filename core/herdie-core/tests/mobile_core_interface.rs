@@ -171,11 +171,8 @@ fn transport_data_becomes_a_batched_terminal_frame() {
         1
     );
     assert_eq!(events[1].kind, CoreEventKind::TerminalFrame);
-    let snapshot = events[1]
-        .terminal_snapshot_json
-        .as_deref()
-        .expect("terminal snapshot");
-    assert!(snapshot.contains("Herdie"));
+    let update = events[1].terminal_update.as_ref().expect("terminal update");
+    assert!(update.text.contains("Herdie"));
 }
 
 #[test]
@@ -196,6 +193,25 @@ fn input_and_resize_cross_the_same_small_interface() {
             rows: 40
         }
     );
+}
+
+#[test]
+fn conversation_scroll_is_sent_to_the_remote_tui_as_mouse_wheel_input() {
+    let (mut core, state) = core();
+    core.connect(profile(), Authentication::None, None, 80, 24)
+        .expect("connect starts");
+    core.poll_events();
+
+    core.scroll(2).expect("scroll input");
+
+    let last_command = state.lock().expect("state").commands.last().cloned();
+    assert_eq!(
+        last_command,
+        Some(TransportCommand::Send(
+            b"\x1b[<64;41;13M\x1b[<64;41;13M".to_vec()
+        ))
+    );
+    assert!(core.poll_events().is_empty());
 }
 
 #[test]

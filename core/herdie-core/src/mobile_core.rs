@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ConnectionProfile, CoreError, DisconnectReason, SessionAction, SessionMachine, SessionState,
-    TerminalModel,
+    TerminalModel, TerminalUpdate,
 };
+
+const LOCAL_SCROLLBACK_LINES: usize = 1_000;
 
 #[derive(Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum Authentication {
@@ -84,7 +86,7 @@ pub enum CoreEventKind {
 pub struct CoreEvent {
     pub kind: CoreEventKind,
     pub state: Option<SessionState>,
-    pub terminal_snapshot_json: Option<String>,
+    pub terminal_update: Option<TerminalUpdate>,
     pub message: Option<String>,
     pub expected_host_key: Option<String>,
     pub presented_host_key: Option<String>,
@@ -95,18 +97,18 @@ impl CoreEvent {
         Self {
             kind: CoreEventKind::StateChanged,
             state: Some(state),
-            terminal_snapshot_json: None,
+            terminal_update: None,
             message: None,
             expected_host_key: None,
             presented_host_key: None,
         }
     }
 
-    fn terminal_frame(snapshot: String) -> Self {
+    fn terminal_frame(update: TerminalUpdate) -> Self {
         Self {
             kind: CoreEventKind::TerminalFrame,
             state: None,
-            terminal_snapshot_json: Some(snapshot),
+            terminal_update: Some(update),
             message: None,
             expected_host_key: None,
             presented_host_key: None,
@@ -117,7 +119,7 @@ impl CoreEvent {
         Self {
             kind: CoreEventKind::Error,
             state: None,
-            terminal_snapshot_json: None,
+            terminal_update: None,
             message: Some(message),
             expected_host_key: None,
             presented_host_key: None,
@@ -137,7 +139,7 @@ impl MobileCore {
     pub fn with_transport(transport: Box<dyn TransportAdapter>) -> Self {
         Self {
             machine: SessionMachine::new(),
-            terminal: TerminalModel::new(80, 24, 10_000),
+            terminal: TerminalModel::new(80, 24, LOCAL_SCROLLBACK_LINES),
             transport,
             pending: VecDeque::new(),
             reconnect_attempt: false,
@@ -200,11 +202,14 @@ impl MobileCore {
             .map_err(|message| CoreError::Transport { message })
     }
 
-    pub fn scroll(&mut self, rows: u32) -> Result<(), CoreError> {
-        self.terminal.scroll(rows);
-        let snapshot = self.terminal.snapshot_json()?;
-        self.pending.push_back(CoreEvent::terminal_frame(snapshot));
-        Ok(())
+    pub fn scroll(&mut self, lines: i32) -> Result<(), CoreError> {
+        let input = self.terminal.mouse_wheel_input(lines);
+        if input.is_empty() {
+            return Ok(());
+        }
+        self.transport
+            .send(input)
+            .map_err(|message| CoreError::Transport { message })
     }
 
     pub fn poll_events(&mut self) -> Vec<CoreEvent> {
@@ -246,7 +251,7 @@ impl MobileCore {
                 self.pending.push_back(CoreEvent {
                     kind: CoreEventKind::HostKeyUnknown,
                     state: None,
-                    terminal_snapshot_json: None,
+                    terminal_update: None,
                     message: None,
                     expected_host_key: None,
                     presented_host_key: Some(presented),
@@ -263,7 +268,7 @@ impl MobileCore {
                 self.pending.push_back(CoreEvent {
                     kind: CoreEventKind::HostKeyMismatch,
                     state: None,
-                    terminal_snapshot_json: None,
+                    terminal_update: None,
                     message: None,
                     expected_host_key: Some(expected),
                     presented_host_key: Some(presented),
@@ -307,9 +312,8 @@ impl MobileCore {
     }
 
     fn push_terminal_frame(&mut self) {
-        match self.terminal.snapshot_json() {
-            Ok(snapshot) => self.pending.push_back(CoreEvent::terminal_frame(snapshot)),
-            Err(error) => self.pending.push_back(CoreEvent::error(error.to_string())),
+        if let Some(update) = self.terminal.take_update() {
+            self.pending.push_back(CoreEvent::terminal_frame(update));
         }
     }
 }

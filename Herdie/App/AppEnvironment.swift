@@ -96,9 +96,9 @@ private final class SimulatedConnectionFailureSessionClient: SessionClient {
 
     func send(_ data: Data) throws {}
     func resize(columns: UInt16, rows: UInt16) throws {}
-    func scroll(rows: UInt32) throws {}
+    func scroll(lines: Int32) throws {}
 
-    func poll() -> [SessionEvent] {
+    func poll() async -> [SessionEvent] {
         defer { events.removeAll() }
         return events
     }

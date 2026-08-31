@@ -20,7 +20,9 @@ pub use profile::{ConnectionProfile, CoreError};
 pub use session::{DisconnectReason, SessionAction, SessionMachine, SessionState};
 #[cfg(feature = "ssh")]
 pub use ssh_transport::SshTransport;
-pub use terminal::{AnsiColor, CellSnapshot, CursorSnapshot, TerminalModel, TerminalSnapshot};
+pub use terminal::{
+    AnsiColor, CellSnapshot, CursorSnapshot, TerminalModel, TerminalSnapshot, TerminalUpdate,
+};
 pub use trust::{HostTrust, HostTrustDecision};
 
 uniffi::setup_scaffolding!();

@@ -46,6 +46,45 @@ fn snapshots_are_json_round_trippable_for_mobile_bindings() {
 }
 
 #[test]
+fn terminal_updates_send_a_full_frame_once_then_only_changed_cells() {
+    let mut terminal = TerminalModel::new(8, 2, 100);
+    terminal.process(b"abc");
+
+    let first = terminal.take_update().expect("initial update");
+    assert!(first.full);
+    assert_eq!(first.cells.len(), 16);
+
+    terminal.process(b"d");
+
+    let second = terminal.take_update().expect("incremental update");
+    assert!(!second.full);
+    assert_eq!(second.cells.len(), 1);
+    assert_eq!(second.cells[0].column, 3);
+    assert_eq!(second.cells[0].contents, "d");
+}
+
+#[test]
+fn terminal_update_is_omitted_when_visible_state_did_not_change() {
+    let mut terminal = TerminalModel::new(8, 2, 100);
+    terminal.process(b"abc");
+    terminal.take_update().expect("initial update");
+
+    assert!(terminal.take_update().is_none());
+}
+
+#[test]
+fn mouse_wheel_input_targets_the_terminal_center_and_preserves_direction() {
+    let terminal = TerminalModel::new(80, 24, 100);
+
+    assert_eq!(
+        terminal.mouse_wheel_input(2),
+        b"\x1b[<64;41;13M\x1b[<64;41;13M"
+    );
+    assert_eq!(terminal.mouse_wheel_input(-1), b"\x1b[<65;41;13M");
+    assert!(terminal.mouse_wheel_input(0).is_empty());
+}
+
+#[test]
 fn scrollback_can_be_viewed_without_changing_terminal_contents() {
     let mut terminal = TerminalModel::new(8, 2, 100);
     terminal.process(b"first\r\nsecond\r\nthird");

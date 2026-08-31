@@ -43,8 +43,8 @@ impl HerdieCore {
         self.core().resize(columns, rows)
     }
 
-    pub fn scroll(&self, rows: u32) -> Result<(), CoreError> {
-        self.core().scroll(rows)
+    pub fn scroll(&self, lines: i32) -> Result<(), CoreError> {
+        self.core().scroll(lines)
     }
 
     pub fn poll_events(&self) -> Vec<CoreEvent> {

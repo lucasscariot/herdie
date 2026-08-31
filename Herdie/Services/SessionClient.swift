@@ -29,18 +29,19 @@ struct SessionConnectRequest: Equatable, Sendable {
 
 enum SessionEvent: Equatable, Sendable {
     case stateChanged(AppSessionState)
-    case terminalFrame(String)
+    case terminalFrame(TerminalUpdate)
     case hostKeyUnknown(presented: String)
     case hostKeyMismatch(expected: String, presented: String)
     case error(String)
 }
 
+@MainActor
 protocol SessionClient: AnyObject {
     func connect(_ request: SessionConnectRequest) throws
     func send(_ data: Data) throws
     func resize(columns: UInt16, rows: UInt16) throws
-    func scroll(rows: UInt32) throws
-    func poll() -> [SessionEvent]
+    func scroll(lines: Int32) throws
+    func poll() async -> [SessionEvent]
     func disconnect(_ reason: SessionDisconnectReason)
 }
 
@@ -48,7 +49,7 @@ final class InMemorySessionClient: SessionClient {
     var connectRequests: [SessionConnectRequest] = []
     var sent: [Data] = []
     var sizes: [(UInt16, UInt16)] = []
-    var scrollOffsets: [UInt32] = []
+    var scrollDeltas: [Int32] = []
     var events: [SessionEvent] = []
     var disconnectReasons: [SessionDisconnectReason] = []
 
@@ -64,11 +65,11 @@ final class InMemorySessionClient: SessionClient {
         sizes.append((columns, rows))
     }
 
-    func scroll(rows: UInt32) throws {
-        scrollOffsets.append(rows)
+    func scroll(lines: Int32) throws {
+        scrollDeltas.append(lines)
     }
 
-    func poll() -> [SessionEvent] {
+    func poll() async -> [SessionEvent] {
         defer { events.removeAll() }
         return events
     }

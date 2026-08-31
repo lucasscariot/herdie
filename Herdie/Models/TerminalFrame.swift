@@ -1,84 +1,22 @@
-import Foundation
+typealias TerminalColor = AnsiColor
+typealias TerminalCell = CellSnapshot
+typealias TerminalCursor = CursorSnapshot
 
-enum TerminalColor: Equatable, Sendable {
-    case `default`
-    case indexed(index: UInt8)
-    case rgb(red: UInt8, green: UInt8, blue: UInt8)
+enum TerminalUpdateError: Error {
+    case invalidFullFrame
+    case incompatibleDelta
+    case cellOutsideGrid
 }
 
-extension TerminalColor: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case kind
-        case index
-        case red
-        case green
-        case blue
-    }
-
-    private enum Kind: String, Codable {
-        case `default`
-        case indexed
-        case rgb
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        switch try container.decode(Kind.self, forKey: .kind) {
-        case .default:
-            self = .default
-        case .indexed:
-            self = .indexed(index: try container.decode(UInt8.self, forKey: .index))
-        case .rgb:
-            self = .rgb(
-                red: try container.decode(UInt8.self, forKey: .red),
-                green: try container.decode(UInt8.self, forKey: .green),
-                blue: try container.decode(UInt8.self, forKey: .blue)
-            )
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .default:
-            try container.encode(Kind.default, forKey: .kind)
-        case let .indexed(index):
-            try container.encode(Kind.indexed, forKey: .kind)
-            try container.encode(index, forKey: .index)
-        case let .rgb(red, green, blue):
-            try container.encode(Kind.rgb, forKey: .kind)
-            try container.encode(red, forKey: .red)
-            try container.encode(green, forKey: .green)
-            try container.encode(blue, forKey: .blue)
-        }
-    }
-}
-
-struct TerminalCell: Codable, Equatable, Sendable {
-    var row: UInt16
-    var column: UInt16
-    var contents: String
-    var foreground: TerminalColor
-    var background: TerminalColor
-    var bold: Bool
-    var italic: Bool
-    var underline: Bool
-    var inverse: Bool
-}
-
-struct TerminalCursor: Codable, Equatable, Sendable {
-    var row: UInt16
-    var column: UInt16
-    var visible: Bool
-}
-
-struct TerminalFrame: Codable, Equatable, Sendable {
+struct TerminalFrame: Equatable, Sendable {
     var columns: UInt16
     var rows: UInt16
     var scrollbackOffset: UInt32
     var cursor: TerminalCursor
     var cells: [TerminalCell]
     var text: String
+    var damagedCellIndices: [Int]
+    var requiresFullRedraw: Bool
 
     static let empty = TerminalFrame(
         columns: 80,
@@ -86,12 +24,41 @@ struct TerminalFrame: Codable, Equatable, Sendable {
         scrollbackOffset: 0,
         cursor: TerminalCursor(row: 0, column: 0, visible: false),
         cells: [],
-        text: ""
+        text: "",
+        damagedCellIndices: [],
+        requiresFullRedraw: true
     )
 
-    static func decode(_ json: String) throws -> TerminalFrame {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try decoder.decode(TerminalFrame.self, from: Data(json.utf8))
+    mutating func apply(_ update: TerminalUpdate) throws {
+        let cellCount = Int(update.columns) * Int(update.rows)
+        if update.full {
+            guard update.cells.count == cellCount else {
+                throw TerminalUpdateError.invalidFullFrame
+            }
+            columns = update.columns
+            rows = update.rows
+            cells = update.cells
+            damagedCellIndices = []
+            requiresFullRedraw = true
+        } else {
+            guard columns == update.columns, rows == update.rows, cells.count == cellCount else {
+                throw TerminalUpdateError.incompatibleDelta
+            }
+            var damage: [Int] = []
+            damage.reserveCapacity(update.cells.count)
+            for cell in update.cells {
+                let index = Int(cell.row) * Int(columns) + Int(cell.column)
+                guard cell.row < rows, cell.column < columns, cells.indices.contains(index) else {
+                    throw TerminalUpdateError.cellOutsideGrid
+                }
+                cells[index] = cell
+                damage.append(index)
+            }
+            damagedCellIndices = damage
+            requiresFullRedraw = false
+        }
+        scrollbackOffset = update.scrollbackOffset
+        cursor = update.cursor
+        text = update.text
     }
 }

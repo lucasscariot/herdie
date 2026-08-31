@@ -1,6 +1,22 @@
 import SwiftUI
 import UIKit
 
+struct TerminalScrollAccumulator {
+    private var emittedRows = 0
+
+    mutating func consume(translationY: CGFloat, cellHeight: CGFloat) -> Int {
+        guard cellHeight > 0 else { return 0 }
+        let totalRows = Int(-translationY / cellHeight)
+        let delta = totalRows - emittedRows
+        emittedRows = totalRows
+        return delta
+    }
+
+    mutating func reset() {
+        emittedRows = 0
+    }
+}
+
 struct TerminalCanvas: UIViewRepresentable {
     var terminalFrame: TerminalFrame
     var focusGeneration: Int
@@ -29,7 +45,9 @@ struct TerminalCanvas: UIViewRepresentable {
     }
 
     private func configure(_ view: TerminalCanvasView) {
-        view.terminalFrame = terminalFrame
+        if view.terminalFrame != terminalFrame {
+            view.terminalFrame = terminalFrame
+        }
         view.onInput = onInput
         view.onResize = onResize
         view.onScroll = onScroll
@@ -45,8 +63,10 @@ struct TerminalCanvas: UIViewRepresentable {
 final class TerminalCanvasView: UIView, UIKeyInput {
     var terminalFrame = TerminalFrame.empty {
         didSet {
-            accessibilityValue = terminalFrame.text
-            setNeedsDisplay()
+            if oldValue.text != terminalFrame.text {
+                accessibilityValue = terminalFrame.text
+            }
+            invalidateDamage(previous: oldValue)
         }
     }
     var focusGeneration = 0
@@ -59,6 +79,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
     private lazy var regularFont = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
     private lazy var boldFont = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .bold)
     private var lastGridSize: (UInt16, UInt16)?
+    private var scrollAccumulator = TerminalScrollAccumulator()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -69,7 +90,9 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         accessibilityLabel = "Terminal"
         accessibilityTraits = [.updatesFrequently]
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(focusTerminal)))
-        addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:))))
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        pan.cancelsTouchesInView = false
+        addGestureRecognizer(pan)
     }
 
     required init?(coder: NSCoder) {
@@ -105,6 +128,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
                 y: CGFloat(cell.row) * metrics.height
             )
             let cellRect = CGRect(origin: origin, size: metrics)
+            guard cellRect.intersects(rect) else { continue }
             var foreground = color(cell.foreground, defaultColor: .white)
             var background = color(cell.background, defaultColor: UIColor(HerdieTheme.background))
             if cell.inverse { swap(&foreground, &background) }
@@ -131,13 +155,10 @@ final class TerminalCanvasView: UIView, UIKeyInput {
             )
         }
 
-        if terminalFrame.cursor.visible, terminalFrame.scrollbackOffset == 0 {
-            let cursorRect = CGRect(
-                x: CGFloat(terminalFrame.cursor.column) * metrics.width,
-                y: CGFloat(terminalFrame.cursor.row) * metrics.height,
-                width: metrics.width,
-                height: metrics.height
-            )
+        if terminalFrame.cursor.visible,
+           terminalFrame.scrollbackOffset == 0,
+           cursorRect(terminalFrame.cursor, metrics: metrics).intersects(rect) {
+            let cursorRect = cursorRect(terminalFrame.cursor, metrics: metrics)
             context.setFillColor(UIColor(HerdieTheme.accent).withAlphaComponent(0.55).cgColor)
             context.fill(cursorRect)
         }
@@ -173,11 +194,25 @@ final class TerminalCanvasView: UIView, UIKeyInput {
     }
 
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard gesture.state == .ended else { return }
-        let translation = gesture.translation(in: self)
-        let rows = Int((-translation.y / cellMetrics.height).rounded())
-        guard rows != 0 else { return }
-        onScroll?(rows)
+        switch gesture.state {
+        case .began:
+            scrollAccumulator.reset()
+        case .changed, .ended:
+            let rows = scrollAccumulator.consume(
+                translationY: gesture.translation(in: self).y,
+                cellHeight: cellMetrics.height
+            )
+            if rows != 0 {
+                onScroll?(rows)
+            }
+            if gesture.state == .ended {
+                scrollAccumulator.reset()
+            }
+        case .cancelled, .failed:
+            scrollAccumulator.reset()
+        default:
+            break
+        }
     }
 
     private var cellMetrics: CGSize {
@@ -193,6 +228,44 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         guard lastGridSize?.0 != size.0 || lastGridSize?.1 != size.1 else { return }
         lastGridSize = size
         onResize?(columns, rows)
+    }
+
+    private func invalidateDamage(previous: TerminalFrame) {
+        let metrics = cellMetrics
+        guard !terminalFrame.requiresFullRedraw,
+              previous.columns == terminalFrame.columns,
+              previous.rows == terminalFrame.rows
+        else {
+            setNeedsDisplay()
+            return
+        }
+        for index in terminalFrame.damagedCellIndices where terminalFrame.cells.indices.contains(index) {
+            setNeedsDisplay(cellRect(terminalFrame.cells[index], metrics: metrics).insetBy(dx: -1, dy: -1))
+        }
+        if previous.cursor.visible, previous.scrollbackOffset == 0 {
+            setNeedsDisplay(cursorRect(previous.cursor, metrics: metrics))
+        }
+        if terminalFrame.cursor.visible, terminalFrame.scrollbackOffset == 0 {
+            setNeedsDisplay(cursorRect(terminalFrame.cursor, metrics: metrics))
+        }
+    }
+
+    private func cellRect(_ cell: TerminalCell, metrics: CGSize) -> CGRect {
+        CGRect(
+            x: CGFloat(cell.column) * metrics.width,
+            y: CGFloat(cell.row) * metrics.height,
+            width: metrics.width,
+            height: metrics.height
+        )
+    }
+
+    private func cursorRect(_ cursor: TerminalCursor, metrics: CGSize) -> CGRect {
+        CGRect(
+            x: CGFloat(cursor.column) * metrics.width,
+            y: CGFloat(cursor.row) * metrics.height,
+            width: metrics.width,
+            height: metrics.height
+        )
     }
 
     private func color(_ color: TerminalColor, defaultColor: UIColor) -> UIColor {

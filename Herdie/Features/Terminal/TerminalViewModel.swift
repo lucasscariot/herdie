@@ -148,8 +148,8 @@ final class TerminalViewModel {
         applyPendingResize()
     }
 
-    func poll() {
-        for event in session.poll() {
+    func poll() async {
+        for event in await session.poll() {
             consume(event)
         }
     }
@@ -239,11 +239,9 @@ final class TerminalViewModel {
     }
 
     func scroll(by delta: Int) {
-        guard state == .attached else { return }
-        let current = Int(frame.scrollbackOffset)
-        let target = UInt32(max(0, current + delta))
+        guard state == .attached, delta != 0 else { return }
         do {
-            try session.scroll(rows: target)
+            try session.scroll(lines: Int32(clamping: delta))
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -257,9 +255,9 @@ final class TerminalViewModel {
         state = .reconnecting
     }
 
-    func resume() {
+    func resume() async {
         guard wasSuspended else { return }
-        poll()
+        await poll()
         wasSuspended = false
         guard state == .reconnecting else { return }
         scheduleReconnectIfNeeded()
@@ -295,9 +293,9 @@ final class TerminalViewModel {
             case .connecting:
                 break
             }
-        case let .terminalFrame(json):
+        case let .terminalFrame(update):
             do {
-                frame = try TerminalFrame.decode(json)
+                try frame.apply(update)
             } catch {
                 errorMessage = "Terminal output could not be rendered."
             }

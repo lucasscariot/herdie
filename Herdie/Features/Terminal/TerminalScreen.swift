@@ -70,8 +70,9 @@ struct TerminalScreen: View {
         }
         .task {
             while !Task.isCancelled {
-                model.poll()
-                try? await Task.sleep(for: .milliseconds(50))
+                await model.poll()
+                let cadence: Duration = model.state == .attached ? .milliseconds(16) : .milliseconds(100)
+                try? await Task.sleep(for: cadence)
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -79,7 +80,7 @@ struct TerminalScreen: View {
             case .background:
                 model.suspend()
             case .active:
-                model.resume()
+                Task { await model.resume() }
             default:
                 break
             }

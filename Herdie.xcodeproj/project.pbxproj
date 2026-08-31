@@ -65,7 +65,7 @@
 		275912EF8C7AAB8642B5FB88 /* CredentialVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialVault.swift; sourceTree = "<group>"; };
 		2D31E5BBD54BD7437C708591 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		3557AA67D27EA672F64B3F1E /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
-		35E53CEB3A7C8E6056B41CEC /* Herdie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Herdie.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		35E53CEB3A7C8E6056B41CEC /* Herdie.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Herdie.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		370B030874388FE64E937D85 /* WorkspaceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSheet.swift; sourceTree = "<group>"; };
 		43BF3AB791C0C438616F0E89 /* herdie_core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = herdie_core.swift; path = HerdieCore/herdie_core.swift; sourceTree = "<group>"; };
 		465B0215AB6EA87953D137C4 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
@@ -90,7 +90,7 @@
 		C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HerdieTheme.swift; sourceTree = "<group>"; };
 		CDFD6BC47C146090163021E2 /* PersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceTests.swift; sourceTree = "<group>"; };
 		E9542076E28C97DA66017783 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -345,6 +345,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					92EF3E9DB109AA968D94B9A9 = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					F631757F6BE74D301CD955E8 = {
@@ -585,7 +586,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 9Y5725VBNY;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -676,7 +676,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 9Y5725VBNY;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
