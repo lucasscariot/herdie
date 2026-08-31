@@ -1,0 +1,34 @@
+[package]
+name = "herdie-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Portable SSH session and terminal core for Herdie"
+
+[lib]
+crate-type = ["lib", "staticlib", "cdylib"]
+
+[features]
+default = []
+ssh = ["dep:russh", "dep:tokio"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+uniffi = { version = "0.32.0", features = ["cli"] }
+vt100 = "0.16.2"
+
+russh = { version = "0.63.1", default-features = false, features = ["ring"], optional = true }
+tokio = { version = "1.48", features = ["io-util", "macros", "net", "rt-multi-thread", "sync", "time"], optional = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unwrap_used = "deny"

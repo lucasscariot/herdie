@@ -1,0 +1,740 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0DD574246156DD904A583DDF /* ConnectionDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4CADF6225DC14D0EEB427A /* ConnectionDraftTests.swift */; };
+		40C823FCE875D66337AE12D0 /* TerminalFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80ADD4DB046D8A30F021A37A /* TerminalFrame.swift */; };
+		4342C10194E7347C835846A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E9542076E28C97DA66017783 /* Assets.xcassets */; };
+		44B1D01CAC34664ECD0DA657 /* ConnectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7241A85128A4B7AB414A41 /* ConnectionEditorView.swift */; };
+		450E02A4E3ECDE37FAEC554C /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BFEDAAC98F2A687B6336CF7 /* AppEnvironment.swift */; };
+		47E15B201A7877239EECB5C5 /* HerdieApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73684B7D928FA6A7A3592682 /* HerdieApp.swift */; };
+		5D1E57F2925D492F5F36B6FA /* HerdieCore.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69CE0AC8B1AA513237547FAC /* HerdieCore.xcframework */; };
+		60B47EDFF7455123376D7872 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465B0215AB6EA87953D137C4 /* AppPreferences.swift */; };
+		6C02E9DE4018A7D0ACB3D478 /* HerdieUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57A286236C94590F268A743 /* HerdieUITests.swift */; };
+		706597030FF8A8023E53D352 /* Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3557AA67D27EA672F64B3F1E /* Fixtures.swift */; };
+		763196CE41EEE7AC68DF38CD /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D3A790E3E37790B667A1D6D /* DashboardView.swift */; };
+		7802B481677E969B6A225B63 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D31E5BBD54BD7437C708591 /* DashboardViewModel.swift */; };
+		79B1DEEA29EAD1392A6A7005 /* TerminalCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B31684897699FF9A03E24F /* TerminalCanvas.swift */; };
+		7B939304992B3507AD7206AA /* herdie_core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BF3AB791C0C438616F0E89 /* herdie_core.swift */; };
+		7C2FC82C9C724C71367D625E /* ConnectionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D68634F6E97FFB7C1232B5 /* ConnectionRepository.swift */; };
+		8DB8AAE149C1D04FD6DBD0EE /* CredentialVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = 275912EF8C7AAB8642B5FB88 /* CredentialVault.swift */; };
+		98E032A4AEEC4F9602F7F935 /* TerminalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC6B92CEDC69589D0CABF0E /* TerminalViewModel.swift */; };
+		9AA870E345C27F816B688AA7 /* RustSessionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48F5C8461CCF035B5B9FBCA5 /* RustSessionClient.swift */; };
+		A020C579606E6DC8EDAE5C9D /* SavedConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A27684F74EBBC4C61D666A7 /* SavedConnection.swift */; };
+		A5DCE066B6C973E020C61D20 /* TerminalFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CEFAA7EE8A4805118FB6C9 /* TerminalFrameTests.swift */; };
+		B2051117F384AB4475456B11 /* TerminalViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F1D08D1BBEF9626E35D9E6E /* TerminalViewModelTests.swift */; };
+		CE50CB46430FCFDD7C227018 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFD6BC47C146090163021E2 /* PersistenceTests.swift */; };
+		D157E4E731FBBE4DA81FB75B /* ToolbarAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */; };
+		D832F304969BD15C63CAFF4D /* WorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370B030874388FE64E937D85 /* WorkspaceSheet.swift */; };
+		D8747C37B67FEEFBE8960322 /* HerdieTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */; };
+		DC23537AC63B379991B3B20A /* SessionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D807BC07DA6D8CD0DCA1D45 /* SessionClient.swift */; };
+		E0BBD40BB0317B6F97FE6FAB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */; };
+		EC037804B8D4A11A27B8166D /* RecentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA6F46FB11352EE9F1DEB2B /* RecentSession.swift */; };
+		F6F766250FBA793CFAA3E2BB /* TerminalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0361BFB2FA03DB3603D27429 /* TerminalScreen.swift */; };
+		FF4E4E8C865B6F2D4ECEB5DB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C17699097AF65474E874F1 /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		60C38B09B5D8CAF8386AC675 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EC14050E2000350354EC54C5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 92EF3E9DB109AA968D94B9A9;
+			remoteInfo = Herdie;
+		};
+		A62FB1FD84EFE16C0E5BC46E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EC14050E2000350354EC54C5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 92EF3E9DB109AA968D94B9A9;
+			remoteInfo = Herdie;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		033AC1122D5409C8F0DBAB2C /* HerdieUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HerdieUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0361BFB2FA03DB3603D27429 /* TerminalScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalScreen.swift; sourceTree = "<group>"; };
+		0AC6B92CEDC69589D0CABF0E /* TerminalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalViewModel.swift; sourceTree = "<group>"; };
+		1D3A790E3E37790B667A1D6D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		2386FB84D944883ACD9CE9AF /* HerdieTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HerdieTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		275912EF8C7AAB8642B5FB88 /* CredentialVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialVault.swift; sourceTree = "<group>"; };
+		2D31E5BBD54BD7437C708591 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		3557AA67D27EA672F64B3F1E /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
+		35E53CEB3A7C8E6056B41CEC /* Herdie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Herdie.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		370B030874388FE64E937D85 /* WorkspaceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSheet.swift; sourceTree = "<group>"; };
+		43BF3AB791C0C438616F0E89 /* herdie_core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = herdie_core.swift; path = HerdieCore/herdie_core.swift; sourceTree = "<group>"; };
+		465B0215AB6EA87953D137C4 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		48F5C8461CCF035B5B9FBCA5 /* RustSessionClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustSessionClient.swift; sourceTree = "<group>"; };
+		4D807BC07DA6D8CD0DCA1D45 /* SessionClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionClient.swift; sourceTree = "<group>"; };
+		51CEFAA7EE8A4805118FB6C9 /* TerminalFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalFrameTests.swift; sourceTree = "<group>"; };
+		5F1D08D1BBEF9626E35D9E6E /* TerminalViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalViewModelTests.swift; sourceTree = "<group>"; };
+		61C17699097AF65474E874F1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		67B31684897699FF9A03E24F /* TerminalCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalCanvas.swift; sourceTree = "<group>"; };
+		69CE0AC8B1AA513237547FAC /* HerdieCore.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = HerdieCore.xcframework; path = Frameworks/HerdieCore.xcframework; sourceTree = "<group>"; };
+		6E7241A85128A4B7AB414A41 /* ConnectionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionEditorView.swift; sourceTree = "<group>"; };
+		73684B7D928FA6A7A3592682 /* HerdieApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HerdieApp.swift; sourceTree = "<group>"; };
+		7AA6F46FB11352EE9F1DEB2B /* RecentSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentSession.swift; sourceTree = "<group>"; };
+		7B930CC15C5D4048B7A2D5EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		80ADD4DB046D8A30F021A37A /* TerminalFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalFrame.swift; sourceTree = "<group>"; };
+		8A27684F74EBBC4C61D666A7 /* SavedConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedConnection.swift; sourceTree = "<group>"; };
+		8BFEDAAC98F2A687B6336CF7 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		97D68634F6E97FFB7C1232B5 /* ConnectionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionRepository.swift; sourceTree = "<group>"; };
+		9E4CADF6225DC14D0EEB427A /* ConnectionDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDraftTests.swift; sourceTree = "<group>"; };
+		A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarAction.swift; sourceTree = "<group>"; };
+		B57A286236C94590F268A743 /* HerdieUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HerdieUITests.swift; sourceTree = "<group>"; };
+		C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HerdieTheme.swift; sourceTree = "<group>"; };
+		CDFD6BC47C146090163021E2 /* PersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceTests.swift; sourceTree = "<group>"; };
+		E9542076E28C97DA66017783 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		02196D5727FFE3E7206FB305 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5D1E57F2925D492F5F36B6FA /* HerdieCore.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		190BA9D12824BB1DA23B6644 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				97D68634F6E97FFB7C1232B5 /* ConnectionRepository.swift */,
+				275912EF8C7AAB8642B5FB88 /* CredentialVault.swift */,
+				48F5C8461CCF035B5B9FBCA5 /* RustSessionClient.swift */,
+				4D807BC07DA6D8CD0DCA1D45 /* SessionClient.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3160DBCF1C05EB21C7AD7D30 /* Terminal */ = {
+			isa = PBXGroup;
+			children = (
+				67B31684897699FF9A03E24F /* TerminalCanvas.swift */,
+				0361BFB2FA03DB3603D27429 /* TerminalScreen.swift */,
+				0AC6B92CEDC69589D0CABF0E /* TerminalViewModel.swift */,
+				370B030874388FE64E937D85 /* WorkspaceSheet.swift */,
+			);
+			path = Terminal;
+			sourceTree = "<group>";
+		};
+		31892A30E5686E7AFF8A106A /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				7AA6F46FB11352EE9F1DEB2B /* RecentSession.swift */,
+				8A27684F74EBBC4C61D666A7 /* SavedConnection.swift */,
+				80ADD4DB046D8A30F021A37A /* TerminalFrame.swift */,
+				A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		38B71AC6A8DCB520DE309153 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				1D3A790E3E37790B667A1D6D /* DashboardView.swift */,
+				2D31E5BBD54BD7437C708591 /* DashboardViewModel.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		3F819005D27B70B9F6AB811C /* HerdieUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B57A286236C94590F268A743 /* HerdieUITests.swift */,
+			);
+			path = HerdieUITests;
+			sourceTree = "<group>";
+		};
+		4CD1333A531043619934E545 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				69CE0AC8B1AA513237547FAC /* HerdieCore.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		51EA23E0C45442837C1D3C48 /* ConnectionEditor */ = {
+			isa = PBXGroup;
+			children = (
+				6E7241A85128A4B7AB414A41 /* ConnectionEditorView.swift */,
+			);
+			path = ConnectionEditor;
+			sourceTree = "<group>";
+		};
+		5B5ED3B12A3F09AAB0DCF5E2 /* HerdieTests */ = {
+			isa = PBXGroup;
+			children = (
+				9E4CADF6225DC14D0EEB427A /* ConnectionDraftTests.swift */,
+				3557AA67D27EA672F64B3F1E /* Fixtures.swift */,
+				CDFD6BC47C146090163021E2 /* PersistenceTests.swift */,
+				51CEFAA7EE8A4805118FB6C9 /* TerminalFrameTests.swift */,
+				5F1D08D1BBEF9626E35D9E6E /* TerminalViewModelTests.swift */,
+			);
+			path = HerdieTests;
+			sourceTree = "<group>";
+		};
+		5F51FB58F52ADC0D151FF276 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				8BFEDAAC98F2A687B6336CF7 /* AppEnvironment.swift */,
+				465B0215AB6EA87953D137C4 /* AppPreferences.swift */,
+				73684B7D928FA6A7A3592682 /* HerdieApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		6A907CAFC9F4EB6936C3CD7E /* Herdie */ = {
+			isa = PBXGroup;
+			children = (
+				5F51FB58F52ADC0D151FF276 /* App */,
+				6EAC1A06CCCE0119439CC0CA /* Design */,
+				ED6E2C45F9849DE9E41163F6 /* Features */,
+				31892A30E5686E7AFF8A106A /* Models */,
+				8143E27E35A7CA6E75C997B3 /* Resources */,
+				190BA9D12824BB1DA23B6644 /* Services */,
+			);
+			path = Herdie;
+			sourceTree = "<group>";
+		};
+		6EAC1A06CCCE0119439CC0CA /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		8143E27E35A7CA6E75C997B3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E9542076E28C97DA66017783 /* Assets.xcassets */,
+				7B930CC15C5D4048B7A2D5EC /* Info.plist */,
+				F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A5480F152C7EDCF76266F2B6 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				61C17699097AF65474E874F1 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		C04FA2B99A2AAC195F13E5B5 = {
+			isa = PBXGroup;
+			children = (
+				D6330CB496A35D7A60953FE1 /* Generated */,
+				6A907CAFC9F4EB6936C3CD7E /* Herdie */,
+				5B5ED3B12A3F09AAB0DCF5E2 /* HerdieTests */,
+				3F819005D27B70B9F6AB811C /* HerdieUITests */,
+				4CD1333A531043619934E545 /* Frameworks */,
+				D983FD926C79619EA39BA23B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D6330CB496A35D7A60953FE1 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				43BF3AB791C0C438616F0E89 /* herdie_core.swift */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
+		D983FD926C79619EA39BA23B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				35E53CEB3A7C8E6056B41CEC /* Herdie.app */,
+				2386FB84D944883ACD9CE9AF /* HerdieTests.xctest */,
+				033AC1122D5409C8F0DBAB2C /* HerdieUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		ED6E2C45F9849DE9E41163F6 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				51EA23E0C45442837C1D3C48 /* ConnectionEditor */,
+				38B71AC6A8DCB520DE309153 /* Dashboard */,
+				A5480F152C7EDCF76266F2B6 /* Settings */,
+				3160DBCF1C05EB21C7AD7D30 /* Terminal */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		62BC667A64238CC2972AF205 /* HerdieTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF751C77F9F5C295757F984A /* Build configuration list for PBXNativeTarget "HerdieTests" */;
+			buildPhases = (
+				08E0C24954D89B88C780184D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				17FCD80D7E534986BF45578C /* PBXTargetDependency */,
+			);
+			name = HerdieTests;
+			packageProductDependencies = (
+			);
+			productName = HerdieTests;
+			productReference = 2386FB84D944883ACD9CE9AF /* HerdieTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		92EF3E9DB109AA968D94B9A9 /* Herdie */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A254AD954DC2C955D911C5C /* Build configuration list for PBXNativeTarget "Herdie" */;
+			buildPhases = (
+				1E24DCA5A168C0CE7DD2929B /* Sources */,
+				36C4053B99894436759D2BA0 /* Resources */,
+				02196D5727FFE3E7206FB305 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Herdie;
+			packageProductDependencies = (
+			);
+			productName = Herdie;
+			productReference = 35E53CEB3A7C8E6056B41CEC /* Herdie.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F631757F6BE74D301CD955E8 /* HerdieUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FFA53E5DF936B7EB26ED4CC7 /* Build configuration list for PBXNativeTarget "HerdieUITests" */;
+			buildPhases = (
+				6A95116966CBF795270119A1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7B82AFCFB715B98EAC42F690 /* PBXTargetDependency */,
+			);
+			name = HerdieUITests;
+			packageProductDependencies = (
+			);
+			productName = HerdieUITests;
+			productReference = 033AC1122D5409C8F0DBAB2C /* HerdieUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EC14050E2000350354EC54C5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					62BC667A64238CC2972AF205 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					92EF3E9DB109AA968D94B9A9 = {
+						ProvisioningStyle = Automatic;
+					};
+					F631757F6BE74D301CD955E8 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = 92EF3E9DB109AA968D94B9A9;
+					};
+				};
+			};
+			buildConfigurationList = ED96E410E6B47E65FB0281E1 /* Build configuration list for PBXProject "Herdie" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C04FA2B99A2AAC195F13E5B5;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D983FD926C79619EA39BA23B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				92EF3E9DB109AA968D94B9A9 /* Herdie */,
+				62BC667A64238CC2972AF205 /* HerdieTests */,
+				F631757F6BE74D301CD955E8 /* HerdieUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		36C4053B99894436759D2BA0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4342C10194E7347C835846A3 /* Assets.xcassets in Resources */,
+				E0BBD40BB0317B6F97FE6FAB /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		08E0C24954D89B88C780184D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0DD574246156DD904A583DDF /* ConnectionDraftTests.swift in Sources */,
+				706597030FF8A8023E53D352 /* Fixtures.swift in Sources */,
+				CE50CB46430FCFDD7C227018 /* PersistenceTests.swift in Sources */,
+				A5DCE066B6C973E020C61D20 /* TerminalFrameTests.swift in Sources */,
+				B2051117F384AB4475456B11 /* TerminalViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1E24DCA5A168C0CE7DD2929B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				450E02A4E3ECDE37FAEC554C /* AppEnvironment.swift in Sources */,
+				60B47EDFF7455123376D7872 /* AppPreferences.swift in Sources */,
+				44B1D01CAC34664ECD0DA657 /* ConnectionEditorView.swift in Sources */,
+				7C2FC82C9C724C71367D625E /* ConnectionRepository.swift in Sources */,
+				8DB8AAE149C1D04FD6DBD0EE /* CredentialVault.swift in Sources */,
+				763196CE41EEE7AC68DF38CD /* DashboardView.swift in Sources */,
+				7802B481677E969B6A225B63 /* DashboardViewModel.swift in Sources */,
+				47E15B201A7877239EECB5C5 /* HerdieApp.swift in Sources */,
+				D8747C37B67FEEFBE8960322 /* HerdieTheme.swift in Sources */,
+				EC037804B8D4A11A27B8166D /* RecentSession.swift in Sources */,
+				9AA870E345C27F816B688AA7 /* RustSessionClient.swift in Sources */,
+				A020C579606E6DC8EDAE5C9D /* SavedConnection.swift in Sources */,
+				DC23537AC63B379991B3B20A /* SessionClient.swift in Sources */,
+				FF4E4E8C865B6F2D4ECEB5DB /* SettingsView.swift in Sources */,
+				79B1DEEA29EAD1392A6A7005 /* TerminalCanvas.swift in Sources */,
+				40C823FCE875D66337AE12D0 /* TerminalFrame.swift in Sources */,
+				F6F766250FBA793CFAA3E2BB /* TerminalScreen.swift in Sources */,
+				98E032A4AEEC4F9602F7F935 /* TerminalViewModel.swift in Sources */,
+				D157E4E731FBBE4DA81FB75B /* ToolbarAction.swift in Sources */,
+				D832F304969BD15C63CAFF4D /* WorkspaceSheet.swift in Sources */,
+				7B939304992B3507AD7206AA /* herdie_core.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6A95116966CBF795270119A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6C02E9DE4018A7D0ACB3D478 /* HerdieUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		17FCD80D7E534986BF45578C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 92EF3E9DB109AA968D94B9A9 /* Herdie */;
+			targetProxy = 60C38B09B5D8CAF8386AC675 /* PBXContainerItemProxy */;
+		};
+		7B82AFCFB715B98EAC42F690 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 92EF3E9DB109AA968D94B9A9 /* Herdie */;
+			targetProxy = A62FB1FD84EFE16C0E5BC46E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		09BF96D99616C872580B7229 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lucasscariot.herdie.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Herdie;
+			};
+			name = Debug;
+		};
+		1BC4DE23593986D9EB7FE0FE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lucasscariot.herdie.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Herdie;
+			};
+			name = Release;
+		};
+		1F7A46C7E1749D8721D3768C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lucasscariot.herdie.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Herdie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Herdie";
+			};
+			name = Debug;
+		};
+		3BE2B1734FEB972518D8D5BC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		5D4E3C5A8759C43F859CDC69 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lucasscariot.herdie.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Herdie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Herdie";
+			};
+			name = Release;
+		};
+		5EE2EEFBCE37250885AEBF77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 9Y5725VBNY;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Frameworks\"",
+				);
+				INFOPLIST_FILE = Herdie/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lucasscariot.herdie;
+				PRODUCT_NAME = Herdie;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9C1B26092BF71FC07106FB1F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		AB4EA7E2FA74659B5A085DCC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 9Y5725VBNY;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Frameworks\"",
+				);
+				INFOPLIST_FILE = Herdie/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lucasscariot.herdie;
+				PRODUCT_NAME = Herdie;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0A254AD954DC2C955D911C5C /* Build configuration list for PBXNativeTarget "Herdie" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB4EA7E2FA74659B5A085DCC /* Debug */,
+				5EE2EEFBCE37250885AEBF77 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		ED96E410E6B47E65FB0281E1 /* Build configuration list for PBXProject "Herdie" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9C1B26092BF71FC07106FB1F /* Debug */,
+				3BE2B1734FEB972518D8D5BC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF751C77F9F5C295757F984A /* Build configuration list for PBXNativeTarget "HerdieTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F7A46C7E1749D8721D3768C /* Debug */,
+				5D4E3C5A8759C43F859CDC69 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FFA53E5DF936B7EB26ED4CC7 /* Build configuration list for PBXNativeTarget "HerdieUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09BF96D99616C872580B7229 /* Debug */,
+				1BC4DE23593986D9EB7FE0FE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EC14050E2000350354EC54C5 /* Project object */;
+}

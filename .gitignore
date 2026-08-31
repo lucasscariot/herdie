@@ -1,0 +1,12 @@
+.DS_Store
+.build/
+DerivedData/
+build/
+core/target/
+Frameworks/
+Generated/
+*.xcuserstate
+xcuserdata/
+
+# Local product references may contain hostnames, usernames, or pairing tokens.
+product screenshots/

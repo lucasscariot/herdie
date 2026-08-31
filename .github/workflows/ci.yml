@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: aarch64-linux-android
+      - run: cargo fmt --manifest-path core/Cargo.toml --all -- --check
+      - run: cargo clippy --manifest-path core/Cargo.toml --all-targets --all-features -- -D warnings
+      - run: cargo test --manifest-path core/Cargo.toml --all-features
+      - run: cargo check --manifest-path core/Cargo.toml -p herdie-core --target aarch64-linux-android
+
+  ios-build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+      - run: brew install xcodegen
+      - run: make project
+      - run: xcodebuild build-for-testing -project Herdie.xcodeproj -scheme Herdie -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO
+      - name: Run iOS unit and UI tests
+        run: |
+          HERDIE_DEVICE_ID=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          test -n "$HERDIE_DEVICE_ID"
+          xcodebuild test -project Herdie.xcodeproj -scheme Herdie -destination "platform=iOS Simulator,id=$HERDIE_DEVICE_ID" -derivedDataPath DerivedData
