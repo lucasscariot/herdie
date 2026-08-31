@@ -44,15 +44,15 @@ final class TerminalFrameTests: XCTestCase {
         XCTAssertFalse(frame.requiresFullRedraw)
     }
 
-    func testScrollGestureEmitsOnlyNewWholeRowsOfMovement() {
+    func testScrollGestureUsesNaturalIOSDirectionAndEmitsOnlyNewWholeRows() {
         var accumulator = TerminalScrollAccumulator()
 
         XCTAssertEqual(accumulator.consume(translationY: -8, cellHeight: 18), 0)
-        XCTAssertEqual(accumulator.consume(translationY: -20, cellHeight: 18), 1)
-        XCTAssertEqual(accumulator.consume(translationY: -57, cellHeight: 18), 2)
-        XCTAssertEqual(accumulator.consume(translationY: -40, cellHeight: 18), -1)
+        XCTAssertEqual(accumulator.consume(translationY: -20, cellHeight: 18), -1)
+        XCTAssertEqual(accumulator.consume(translationY: -57, cellHeight: 18), -2)
+        XCTAssertEqual(accumulator.consume(translationY: -40, cellHeight: 18), 1)
         accumulator.reset()
-        XCTAssertEqual(accumulator.consume(translationY: 20, cellHeight: 18), -1)
+        XCTAssertEqual(accumulator.consume(translationY: 20, cellHeight: 18), 1)
     }
 }
 

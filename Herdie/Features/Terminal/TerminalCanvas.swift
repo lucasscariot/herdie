@@ -6,7 +6,7 @@ struct TerminalScrollAccumulator {
 
     mutating func consume(translationY: CGFloat, cellHeight: CGFloat) -> Int {
         guard cellHeight > 0 else { return 0 }
-        let totalRows = Int(-translationY / cellHeight)
+        let totalRows = Int(translationY / cellHeight)
         let delta = totalRows - emittedRows
         emittedRows = totalRows
         return delta
