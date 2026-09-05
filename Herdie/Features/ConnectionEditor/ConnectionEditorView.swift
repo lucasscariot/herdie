@@ -72,7 +72,7 @@ struct ConnectionEditorView: View {
                         } label: {
                             Text(draft.isEditing ? "Save" : "Connect")
                                 .font(.headline)
-                                .foregroundStyle(.black)
+                                .foregroundStyle(HerdieTheme.onAccent)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 17)
                                 .background(HerdieTheme.accent, in: Capsule())

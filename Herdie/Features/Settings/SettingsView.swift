@@ -2,11 +2,19 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    let preferences: AppPreferences
+    @Bindable var preferences: AppPreferences
 
     var body: some View {
         NavigationStack {
             List {
+                Section("Appearance") {
+                    Picker("Theme", selection: $preferences.appearance) {
+                        ForEach(AppAppearance.allCases) { appearance in
+                            Text(appearance.title).tag(appearance)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
                 Section("Terminal") {
                     NavigationLink {
                         ComposerSettingsView(preferences: preferences)
@@ -63,9 +71,9 @@ struct SettingsView: View {
                         AboutView()
                     } label: {
                         SettingsRow(
-                            title: "About",
-                            subtitle: "Open source, privacy, and licenses",
-                            symbol: "info.circle"
+                            title: "Made by Lucas Scariot",
+                            subtitle: "Meet the maker · About Herdie",
+                            symbol: "person.crop.circle"
                         )
                     }
                 }
@@ -79,6 +87,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .preferredColorScheme(preferences.appearance.colorScheme)
     }
 }
 
@@ -280,6 +289,9 @@ private struct SecurityFact: View {
 }
 
 struct AboutView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var support = SupportConfiguration()
+
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
@@ -289,7 +301,7 @@ struct AboutView: View {
                         .frame(width: 112, height: 112)
                     Image(systemName: "terminal.fill")
                         .font(.system(size: 48, weight: .bold))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(HerdieTheme.onAccent)
                 }
                 VStack(spacing: 5) {
                     Text("Herdie")
@@ -300,9 +312,35 @@ struct AboutView: View {
                 Text("An independent, open-source Herdr client built with SwiftUI and a portable Rust SSH core.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(HerdieTheme.secondary)
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 12) {
+                        Text("LS")
+                            .font(.headline)
+                            .foregroundStyle(HerdieTheme.onAccent)
+                            .frame(width: 44, height: 44)
+                            .background(HerdieTheme.accent.gradient, in: Circle())
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Made by Lucas Scariot")
+                                .font(.headline)
+                            Text("Independent maker")
+                                .font(.subheadline)
+                                .foregroundStyle(HerdieTheme.secondary)
+                        }
+                    }
+                    Text("I build tools like Herdie. Follow what I’m working on, explore my other projects, or say hello.")
+                        .font(.subheadline)
+                        .foregroundStyle(HerdieTheme.secondary)
+                    makerLink("Explore my work", detail: "lucas.scariot.fr", symbol: "globe", url: "https://lucas.scariot.fr/?utm_source=herdie&utm_medium=app&utm_campaign=maker")
+                    makerLink("Follow on X", detail: "@lucas_scrt", symbol: "bubble.left.and.bubble.right", url: "https://x.com/lucas_scrt")
+                    if support.isEnabled {
+                        makerLink("Buy me a coffee", detail: "Optional support. Herdie stays free.", symbol: "cup.and.saucer", url: "https://buymeacoffee.com/lucasscariot")
+                    }
+                }
+                .padding(18)
+                .herdieCard()
                 VStack(alignment: .leading, spacing: 12) {
                     Label("MIT licensed", systemImage: "chevron.left.forwardslash.chevron.right")
-                    Label("No account or hosted backend", systemImage: "person.crop.circle.badge.xmark")
+                    Label("No account required", systemImage: "person.crop.circle.badge.xmark")
                     Label("No telemetry", systemImage: "chart.bar.xaxis")
                     Label("Credentials stay in Keychain", systemImage: "key.fill")
                 }
@@ -318,5 +356,31 @@ struct AboutView: View {
         }
         .background(HerdieTheme.background)
         .navigationTitle("About")
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            while !Task.isCancelled {
+                await support.refresh()
+                do { try await Task.sleep(for: .seconds(60)) }
+                catch { return }
+            }
+        }
+    }
+
+    private func makerLink(_ title: String, detail: String, symbol: String, url: String) -> some View {
+        Link(destination: URL(string: url)!) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.subheadline.weight(.semibold))
+                    Text(detail).font(.caption).foregroundStyle(HerdieTheme.secondary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right").font(.caption)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .accessibilityHint("Opens in your browser")
     }
 }

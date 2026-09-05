@@ -98,6 +98,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
     var onPaste: (() -> Void)?
 
     private let fontSize: CGFloat = 13
+    private let terminalBackground = UIColor(red: 0.025, green: 0.025, blue: 0.055, alpha: 1)
     private lazy var regularFont = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
     private lazy var boldFont = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .bold)
     private var lastGridSize: (UInt16, UInt16)?
@@ -107,12 +108,12 @@ final class TerminalCanvasView: UIView, UIKeyInput {
     override init(frame: CGRect) {
         super.init(frame: frame)
         isOpaque = true
-        backgroundColor = UIColor(HerdieTheme.background)
+        backgroundColor = terminalBackground
         contentMode = .redraw
         isAccessibilityElement = true
         accessibilityLabel = "Terminal"
         accessibilityTraits = [.updatesFrequently]
-        accessibilityHint = "Tap to show or hide the keyboard"
+        accessibilityHint = "Tap to hide the keyboard. Use the keyboard button to type."
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(toggleKeyboard)))
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.cancelsTouchesInView = false
@@ -125,6 +126,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
 
     override var canBecomeFirstResponder: Bool { true }
     var hasText: Bool { true }
+    var keyboardAppearance: UIKeyboardAppearance = .default
 
     func insertText(_ text: String) {
         onInput?(Data(text.utf8))
@@ -141,7 +143,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
 
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
-        context.setFillColor(UIColor(HerdieTheme.background).cgColor)
+        context.setFillColor(terminalBackground.cgColor)
         context.fill(rect)
         guard terminalFrame.columns > 0, terminalFrame.rows > 0 else { return }
 
@@ -154,10 +156,10 @@ final class TerminalCanvasView: UIView, UIKeyInput {
             let cellRect = CGRect(origin: origin, size: metrics)
             guard cellRect.intersects(rect) else { continue }
             var foreground = color(cell.foreground, defaultColor: .white)
-            var background = color(cell.background, defaultColor: UIColor(HerdieTheme.background))
+            var background = color(cell.background, defaultColor: terminalBackground)
             if cell.inverse { swap(&foreground, &background) }
 
-            if background != UIColor(HerdieTheme.background) {
+            if background != terminalBackground {
                 context.setFillColor(background.cgColor)
                 context.fill(cellRect)
             }
@@ -217,7 +219,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         if isFirstResponder {
             resignFirstResponder()
         } else {
-            becomeFirstResponder()
+            window?.endEditing(true)
         }
     }
 

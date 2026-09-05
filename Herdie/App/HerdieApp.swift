@@ -7,9 +7,17 @@ struct HerdieApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DashboardView(environment: environment)
-                .preferredColorScheme(.dark)
-                .tint(HerdieTheme.accent)
+            HerdieRootView(environment: environment)
         }
+    }
+}
+
+private struct HerdieRootView: View {
+    let environment: AppEnvironment
+
+    var body: some View {
+        DashboardView(environment: environment)
+            .preferredColorScheme(environment.preferences.appearance.colorScheme)
+            .tint(HerdieTheme.accent)
     }
 }

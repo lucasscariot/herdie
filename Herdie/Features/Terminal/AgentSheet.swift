@@ -28,7 +28,10 @@ struct AgentSheet: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: 10) {
-                    ForEach(model.agents) { agent in
+                    ForEach(model.agents.filter { $0.status == .blocked }) { agent in
+                        agentButton(agent)
+                    }
+                    ForEach(model.agents.filter { $0.status != .blocked }) { agent in
                         agentButton(agent)
                     }
                 }
@@ -133,10 +136,10 @@ private extension RunningAgentStatus {
     var color: Color {
         switch self {
         case .unknown: HerdieTheme.secondary
-        case .idle: .green
+        case .idle: HerdieTheme.blue
         case .working: HerdieTheme.accent
         case .blocked: .orange
-        case .done: .mint
+        case .done: HerdieTheme.blue
         }
     }
 }

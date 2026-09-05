@@ -13,6 +13,10 @@ struct TerminalScreen: View {
     @State private var showingWorkspaces = false
     @State private var showingAgents = false
     @State private var hasEnded = false
+    @State private var showingReader = false
+    @State private var readingSnapshot = ""
+    @State private var showingWriting = false
+    @State private var keyboardVisible = false
 
     init(
         connection: SavedConnection,
@@ -63,11 +67,14 @@ struct TerminalScreen: View {
                     )
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                TerminalToolbar(
-                    model: model,
-                    actions: environment.preferences.toolbarActions,
-                    onPaste: paste
-                )
+                if keyboardVisible {
+                    TerminalToolbar(
+                        model: model,
+                        actions: environment.preferences.toolbarActions,
+                        onPaste: paste
+                    )
+                }
+                navigationDock
             }
         }
         .task {
@@ -87,6 +94,12 @@ struct TerminalScreen: View {
                 break
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+        }
         .sheet(isPresented: $showingWorkspaces) {
             WorkspaceSheet(model: model)
                 .presentationDetents([.medium])
@@ -96,6 +109,45 @@ struct TerminalScreen: View {
             AgentSheet(model: model)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingReader) {
+            NavigationStack {
+                ScrollView {
+                    Text(readingSnapshot.isEmpty ? "No terminal output yet." : readingSnapshot)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .navigationTitle("Read output")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Back to live") { showingReader = false }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingWriting) {
+            NavigationStack {
+                TextEditor(text: $model.composerDraft)
+                    .padding()
+                    .accessibilityLabel("Message draft")
+                    .navigationTitle("Write a message")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Keep draft") { showingWriting = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Send") {
+                                model.sendComposer()
+                                showingWriting = false
+                            }
+                            .disabled(model.composerDraft.isEmpty || model.state != .attached)
+                        }
+                    }
+            }
         }
         .alert("Verify SSH Host", isPresented: Binding(
             get: { model.pendingHostKey != nil },
@@ -143,7 +195,7 @@ struct TerminalScreen: View {
             } label: {
                 Image(systemName: "minus")
                     .font(.headline)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(HerdieTheme.onAccent)
                     .frame(width: 34, height: 34)
                     .background(statusColor, in: Circle())
             }
@@ -159,16 +211,6 @@ struct TerminalScreen: View {
             }
             Spacer()
             Button {
-                showingAgents = true
-            } label: {
-                Label("Agents", systemImage: "person.2")
-                    .labelStyle(.iconOnly)
-                    .font(.title3)
-                    .frame(width: 38, height: 34)
-            }
-            .disabled(model.state != .attached)
-            .accessibilityLabel("Running agents")
-            Button {
                 showingWorkspaces = true
             } label: {
                 Label("Workspaces", systemImage: "rectangle.3.group")
@@ -179,14 +221,62 @@ struct TerminalScreen: View {
             .accessibilityLabel("Herdr workspaces")
             Text("SSH")
                 .font(.caption.bold())
-                .foregroundStyle(.blue)
+                .foregroundStyle(HerdieTheme.blue)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.blue.opacity(0.16), in: Capsule())
+                .background(HerdieTheme.blue.opacity(0.12), in: Capsule())
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial)
+    }
+
+    private var navigationDock: some View {
+        HStack(spacing: 0) {
+            dockButton("Running agents", symbol: "person.2") {
+                dismissKeyboard()
+                showingAgents = true
+            }
+            .disabled(model.state != .attached)
+            dockButton("Toggle full-screen pane", symbol: "arrow.up.left.and.arrow.down.right") {
+                dismissKeyboard()
+                model.togglePaneFocus()
+            }
+            .disabled(model.state != .attached)
+            dockButton("Read terminal output", symbol: "doc.text.magnifyingglass") {
+                dismissKeyboard()
+                readingSnapshot = model.frame.text
+                showingReader = true
+            }
+            dockButton("Write a message", symbol: "square.and.pencil") {
+                dismissKeyboard()
+                showingWriting = true
+            }
+            dockButton("Show keyboard", symbol: "keyboard") {
+                model.perform(.keyboard)
+            }
+        }
+        .frame(height: 44)
+        .padding(.horizontal, 8)
+        .background(.ultraThinMaterial)
+        .accessibilityIdentifier("terminal-navigation-dock")
+    }
+
+    private func dockButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 19, weight: .medium))
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .tint(HerdieTheme.accent)
+        .accessibilityLabel(title)
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private var stateLabel: String {
@@ -266,7 +356,7 @@ private struct ConnectionRecoveryCard: View {
             }
             Button("Try Again", action: onRetry)
                 .font(.headline)
-                .foregroundStyle(.black)
+                .foregroundStyle(HerdieTheme.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 13)
                 .background(HerdieTheme.accent, in: Capsule())
@@ -305,7 +395,7 @@ private struct ComposerBar: View {
             } label: {
                 Image(systemName: "arrow.up")
                     .font(.headline)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(HerdieTheme.onAccent)
                     .frame(width: 42, height: 42)
                     .background(HerdieTheme.accent, in: Circle())
             }
@@ -344,13 +434,17 @@ private struct TerminalToolbar: View {
                         }
                         .frame(minWidth: 42, minHeight: 42)
                         .padding(.horizontal, action.systemImage == nil ? 5 : 0)
-                        .foregroundStyle(action == .control && model.controlArmed ? .black : .white)
+                        .foregroundStyle(action == .control && model.controlArmed ? HerdieTheme.onAccent : Color.primary)
                         .background(
                             action == .control && model.controlArmed
                                 ? HerdieTheme.accent
                                 : HerdieTheme.raisedSurface,
                             in: RoundedRectangle(cornerRadius: 14)
                         )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(HerdieTheme.border, lineWidth: 0.5)
+                        }
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(action.title)

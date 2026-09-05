@@ -31,6 +31,7 @@
 		CE50CB46430FCFDD7C227018 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFD6BC47C146090163021E2 /* PersistenceTests.swift */; };
 		D157E4E731FBBE4DA81FB75B /* ToolbarAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */; };
 		D37D614356E37FA5825E2502 /* AgentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA65BBA44BEA81D5C32EF2EE /* AgentSheet.swift */; };
+		D3A13513D23103C7E7CD7877 /* SupportConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C4F150BDDBE97BD3C886DA0 /* SupportConfiguration.swift */; };
 		D832F304969BD15C63CAFF4D /* WorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370B030874388FE64E937D85 /* WorkspaceSheet.swift */; };
 		D8747C37B67FEEFBE8960322 /* HerdieTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */; };
 		DC23537AC63B379991B3B20A /* SessionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D807BC07DA6D8CD0DCA1D45 /* SessionClient.swift */; };
@@ -85,6 +86,7 @@
 		8A27684F74EBBC4C61D666A7 /* SavedConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedConnection.swift; sourceTree = "<group>"; };
 		8BFEDAAC98F2A687B6336CF7 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		97D68634F6E97FFB7C1232B5 /* ConnectionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionRepository.swift; sourceTree = "<group>"; };
+		9C4F150BDDBE97BD3C886DA0 /* SupportConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportConfiguration.swift; sourceTree = "<group>"; };
 		9E4CADF6225DC14D0EEB427A /* ConnectionDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDraftTests.swift; sourceTree = "<group>"; };
 		A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarAction.swift; sourceTree = "<group>"; };
 		AA65BBA44BEA81D5C32EF2EE /* AgentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSheet.swift; sourceTree = "<group>"; };
@@ -114,6 +116,7 @@
 				275912EF8C7AAB8642B5FB88 /* CredentialVault.swift */,
 				48F5C8461CCF035B5B9FBCA5 /* RustSessionClient.swift */,
 				4D807BC07DA6D8CD0DCA1D45 /* SessionClient.swift */,
+				9C4F150BDDBE97BD3C886DA0 /* SupportConfiguration.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -422,6 +425,7 @@
 				A020C579606E6DC8EDAE5C9D /* SavedConnection.swift in Sources */,
 				DC23537AC63B379991B3B20A /* SessionClient.swift in Sources */,
 				FF4E4E8C865B6F2D4ECEB5DB /* SettingsView.swift in Sources */,
+				D3A13513D23103C7E7CD7877 /* SupportConfiguration.swift in Sources */,
 				79B1DEEA29EAD1392A6A7005 /* TerminalCanvas.swift in Sources */,
 				40C823FCE875D66337AE12D0 /* TerminalFrame.swift in Sources */,
 				F6F766250FBA793CFAA3E2BB /* TerminalScreen.swift in Sources */,

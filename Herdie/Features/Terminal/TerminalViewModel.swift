@@ -245,6 +245,10 @@ final class TerminalViewModel {
         send(Data(forward ? [0x00, 0x09] : [0x00, 0x1B, 0x5B, 0x5A]))
     }
 
+    func togglePaneFocus() {
+        send(Data([0x00, 0x7A]))
+    }
+
     func scroll(by delta: Int) {
         guard state == .attached, delta != 0 else { return }
         do {

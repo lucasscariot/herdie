@@ -2,6 +2,69 @@ import XCTest
 
 @MainActor
 final class HerdieUITests: XCTestCase {
+    func testHomeMakerLinkIsAvailableOnFirstLaunch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage"]
+        app.launch()
+        let link = app.buttons["home-maker-link"]
+        XCTAssertTrue(link.waitForExistence(timeout: 3))
+        link.tap()
+        XCTAssertTrue(app.navigationBars["About"].waitForExistence(timeout: 3))
+        app.buttons["Done"].tap()
+        XCTAssertTrue(link.exists)
+    }
+
+    func testMakerCardAppearsOnThirdLaunchAndCanBeDismissed() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage"]
+        app.launch()
+        XCTAssertFalse(app.buttons["Dismiss maker card"].exists)
+        app.terminate()
+        app.launchArguments = ["--ui-testing"]
+        app.launch()
+        XCTAssertFalse(app.buttons["Dismiss maker card"].exists)
+        app.terminate()
+        app.launch()
+        let dismiss = app.buttons["Dismiss maker card"]
+        XCTAssertTrue(dismiss.waitForExistence(timeout: 3))
+        dismiss.tap()
+        XCTAssertFalse(dismiss.exists)
+        app.terminate()
+        app.launch()
+        XCTAssertFalse(dismiss.exists)
+    }
+
+    func testPhoneDockOpensReaderAndPreservesWritingDraft() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage", "--seed-demo"]
+        app.launch()
+        app.staticTexts["Mac Studio"].tap()
+        let agents = app.buttons["Running agents"]
+        XCTAssertTrue(agents.waitForExistence(timeout: 3))
+        XCTAssertGreaterThanOrEqual(agents.frame.width, 44)
+        XCTAssertEqual(agents.frame.height, 44, accuracy: 1)
+        XCTAssertEqual(agents.frame.midY, app.buttons["Show keyboard"].frame.midY, accuracy: 1)
+        let dock = XCTAttachment(screenshot: app.screenshot())
+        dock.name = "Compact terminal dock"
+        dock.lifetime = .keepAlways
+        add(dock)
+        app.buttons["Read terminal output"].tap()
+        XCTAssertTrue(app.navigationBars["Read output"].waitForExistence(timeout: 3))
+        app.buttons["Back to live"].tap()
+        app.buttons["Write a message"].tap()
+        let draft = app.textViews["Message draft"]
+        XCTAssertTrue(draft.waitForExistence(timeout: 3))
+        draft.tap()
+        draft.typeText("Review this change")
+        app.buttons["Keep draft"].tap()
+        app.buttons["Write a message"].tap()
+        XCTAssertEqual(draft.value as? String, "Review this change")
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Phone writing sheet"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
     func testConnectionCreationFlowIsReachable() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-storage"]

@@ -6,6 +6,7 @@ struct DashboardView: View {
     @State private var showingConnectionEditor = false
     @State private var editingConnection: SavedConnection?
     @State private var showingSettings = false
+    @State private var showingMaker = false
     @State private var showingConnectionManager = false
     @State private var activeConnection: SavedConnection?
     @State private var recentSession: RecentSession?
@@ -20,6 +21,9 @@ struct DashboardView: View {
                     header
                     sessions
                     connections
+                    if environment.preferences.showsMakerCard {
+                        makerCard
+                    }
                     privacyFooter
                 }
                 .padding(.horizontal, 20)
@@ -42,6 +46,16 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(preferences: environment.preferences)
+        }
+        .sheet(isPresented: $showingMaker) {
+            NavigationStack {
+                AboutView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showingMaker = false }
+                        }
+                    }
+            }
         }
         .sheet(isPresented: $showingConnectionManager) {
             ConnectionManagerView(model: model)
@@ -95,6 +109,36 @@ struct DashboardView: View {
             }
         }
         .padding(.top, 12)
+    }
+
+    private var makerCard: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Button {
+                showingMaker = true
+            } label: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Enjoying Herdie?").font(.headline)
+                    Text("I’m Lucas, the maker. Discover my other projects and follow what I’m building.")
+                        .font(.subheadline)
+                        .foregroundStyle(HerdieTheme.secondary)
+                    Label("Meet the maker", systemImage: "arrow.up.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(HerdieTheme.accent)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Button {
+                environment.preferences.dismissMakerCard()
+            } label: {
+                Image(systemName: "xmark")
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Dismiss maker card")
+        }
+        .padding(16)
+        .herdieCard()
     }
 
     @ViewBuilder
@@ -169,10 +213,22 @@ struct DashboardView: View {
     }
 
     private var privacyFooter: some View {
-        Label("Direct SSH · no Herdie account or relay", systemImage: "lock.shield")
-            .font(.caption)
-            .foregroundStyle(HerdieTheme.secondary)
-            .frame(maxWidth: .infinity)
+        VStack(spacing: 2) {
+            Label("Direct SSH · no Herdie account or relay", systemImage: "lock.shield")
+                .foregroundStyle(HerdieTheme.secondary)
+            Button {
+                showingMaker = true
+            } label: {
+                Text("Made by Lucas Scariot · About")
+                    .foregroundStyle(HerdieTheme.accent)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home-maker-link")
+        }
+        .font(.caption)
+        .frame(maxWidth: .infinity)
     }
 
     private var addButton: some View {
@@ -181,7 +237,7 @@ struct DashboardView: View {
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(.black)
+                .foregroundStyle(HerdieTheme.onAccent)
                 .frame(width: 72, height: 72)
                 .background(HerdieTheme.accent, in: Circle())
                 .shadow(color: HerdieTheme.accent.opacity(0.3), radius: 24)
@@ -215,7 +271,7 @@ private struct ConnectionRow: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(connection.name)
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                         Text(connection.destination)
                             .font(.system(.subheadline, design: .monospaced))
                             .foregroundStyle(HerdieTheme.secondary)
@@ -342,7 +398,7 @@ private struct RecentSessionCard: View {
             Divider().overlay(.white.opacity(0.08))
             Text(session.preview.isEmpty ? "Herdr is ready to reattach." : session.preview)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.secondary)
                 .lineLimit(8)
                 .frame(maxWidth: .infinity, minHeight: 106, alignment: .topLeading)
                 .padding(12)

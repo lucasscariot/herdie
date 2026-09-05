@@ -4,6 +4,20 @@ import Security
 
 @MainActor
 final class PersistenceTests: XCTestCase {
+    func testMakerCardAppearsOnThirdLaunchAndDismissalPersists() throws {
+        let suiteName = "HerdieTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        XCTAssertFalse(AppPreferences(defaults: defaults).showsMakerCard)
+        XCTAssertFalse(AppPreferences(defaults: defaults).showsMakerCard)
+        let thirdLaunch = AppPreferences(defaults: defaults)
+        XCTAssertTrue(thirdLaunch.showsMakerCard)
+        thirdLaunch.dismissMakerCard()
+        XCTAssertFalse(thirdLaunch.showsMakerCard)
+        XCTAssertFalse(AppPreferences(defaults: defaults).showsMakerCard)
+    }
+
     func testMetadataRepositoryDoesNotContainCredentials() throws {
         let suiteName = "HerdieTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
