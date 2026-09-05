@@ -1,5 +1,6 @@
 //! Portable core for Herdie.
 
+mod agent;
 #[cfg(feature = "ssh")]
 mod ffi;
 mod mobile_core;
@@ -10,6 +11,7 @@ mod ssh_transport;
 mod terminal;
 mod trust;
 
+pub use agent::{AgentSnapshot, AgentStatus};
 #[cfg(feature = "ssh")]
 pub use ffi::HerdieCore;
 pub use mobile_core::{

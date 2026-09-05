@@ -2,6 +2,20 @@ import XCTest
 @testable import Herdie
 
 final class TerminalFrameTests: XCTestCase {
+    func testHorizontalSwipesSwitchOnceAndVerticalGesturesStayScrolling() {
+        var pan = TerminalPanNavigation()
+        XCTAssertFalse(pan.update(CGPoint(x: -25, y: 3)))
+        XCTAssertEqual(pan.finish(CGPoint(x: -90, y: 10)), true)
+        XCTAssertNil(pan.finish(CGPoint(x: -90, y: 10)))
+        XCTAssertFalse(pan.update(CGPoint(x: 25, y: 3)))
+        XCTAssertEqual(pan.finish(CGPoint(x: 90, y: 10)), false)
+        XCTAssertTrue(pan.update(CGPoint(x: 2, y: 20)))
+        XCTAssertTrue(pan.update(CGPoint(x: 90, y: 25)))
+        XCTAssertNil(pan.finish(CGPoint(x: 90, y: 25)))
+        XCTAssertFalse(pan.update(CGPoint(x: 20, y: 0)))
+        XCTAssertNil(pan.finish(CGPoint(x: 40, y: 0)))
+    }
+
     func testAppliesTheStableRustFullUpdateContract() throws {
         let update = TerminalUpdate(
             columns: 2,

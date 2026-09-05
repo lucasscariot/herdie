@@ -53,6 +53,11 @@ It prefers the remote PATH, then checks `~/.local/bin`, Apple Silicon Homebrew,
 and `/usr/local/bin`. Exit status 127 is surfaced as an install/path diagnostic
 instead of a generic remote-process failure.
 
+Agent discovery and focus reuse the authenticated SSH connection through short
+control channels. The Rust core runs `herdr agent list`, maps the sidebar JSON
+to portable records, and validates returned pane IDs before passing one to
+`herdr agent focus`. Swift renders the records without parsing terminal output.
+
 SSH output crosses a bounded producer channel. Each poll also has event and raw
 byte budgets, and all data accepted in that poll produces at most one terminal
 snapshot. This gives the remote TCP stream backpressure without letting one

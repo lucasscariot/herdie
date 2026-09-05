@@ -45,6 +45,8 @@ or hosted backend.
 ### Herdr navigation
 
 - Present workspaces in a sheet above the current terminal.
+- List the agents shown in Herdr's sidebar, including state and reported usage.
+- Move the attached Herdr terminal to an agent by tapping its row.
 - Mark the active workspace and show agent state when structured state exists.
 - Switch workspaces without creating another saved connection.
 - Fall back to the Herdr terminal interface when structured discovery is not

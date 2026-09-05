@@ -11,6 +11,7 @@ struct TerminalScreen: View {
     @State private var model: TerminalViewModel
     @State private var hasConnected = false
     @State private var showingWorkspaces = false
+    @State private var showingAgents = false
     @State private var hasEnded = false
 
     init(
@@ -40,6 +41,7 @@ struct TerminalScreen: View {
                         onInput: model.sendInput,
                         onResize: handleResize,
                         onScroll: model.scroll,
+                        onSwitchPane: model.switchPane,
                         onPaste: paste
                     )
                     .accessibilityIdentifier("terminal-canvas")
@@ -88,6 +90,11 @@ struct TerminalScreen: View {
         .sheet(isPresented: $showingWorkspaces) {
             WorkspaceSheet(model: model)
                 .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingAgents) {
+            AgentSheet(model: model)
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
         .alert("Verify SSH Host", isPresented: Binding(
@@ -151,6 +158,16 @@ struct TerminalScreen: View {
                     .foregroundStyle(HerdieTheme.secondary)
             }
             Spacer()
+            Button {
+                showingAgents = true
+            } label: {
+                Label("Agents", systemImage: "person.2")
+                    .labelStyle(.iconOnly)
+                    .font(.title3)
+                    .frame(width: 38, height: 34)
+            }
+            .disabled(model.state != .attached)
+            .accessibilityLabel("Running agents")
             Button {
                 showingWorkspaces = true
             } label: {

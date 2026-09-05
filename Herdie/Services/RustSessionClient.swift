@@ -55,6 +55,20 @@ final class RustSessionClient: SessionClient {
         }
     }
 
+    func listAgents() throws {
+        let core = core
+        try coreQueue.sync {
+            try core.listAgents()
+        }
+    }
+
+    func focusAgent(paneID: String) throws {
+        let core = core
+        try coreQueue.sync {
+            try core.focusAgent(paneId: paneID)
+        }
+    }
+
     func poll() async -> [SessionEvent] {
         let core = core
         let coreQueue = coreQueue
@@ -96,11 +110,36 @@ final class RustSessionClient: SessionClient {
             else { return nil }
             debugLog("received mismatched host key")
             return .hostKeyMismatch(expected: expected, presented: presented)
+        case .agentsUpdated:
+            guard let agents = event.agents else { return nil }
+            return .agentsUpdated(agents.map(Self.map))
         case .error:
             let message = event.message ?? "The SSH session failed."
             debugLog("error: \(message)")
             return .error(message)
         }
+    }
+
+    nonisolated private static func map(_ agent: AgentSnapshot) -> RunningAgent {
+        let status: RunningAgentStatus = switch agent.status {
+        case .unknown: .unknown
+        case .idle: .idle
+        case .working: .working
+        case .blocked: .blocked
+        case .done: .done
+        }
+        return RunningAgent(
+            agent: agent.agent,
+            status: status,
+            workspaceID: agent.workspaceId,
+            tabID: agent.tabId,
+            paneID: agent.paneId,
+            title: agent.title,
+            provider: agent.provider,
+            context: agent.context,
+            limit: agent.limit,
+            focused: agent.focused
+        )
     }
 
     nonisolated private static func map(_ state: SessionState) -> AppSessionState {

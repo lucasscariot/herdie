@@ -45,6 +45,24 @@ impl TransportAdapter for RecordingTransport {
         Ok(())
     }
 
+    fn list_agents(&mut self) -> Result<(), String> {
+        self.state
+            .lock()
+            .expect("recording state")
+            .commands
+            .push(TransportCommand::ListAgents);
+        Ok(())
+    }
+
+    fn focus_agent(&mut self, pane_id: String) -> Result<(), String> {
+        self.state
+            .lock()
+            .expect("recording state")
+            .commands
+            .push(TransportCommand::FocusAgent { pane_id });
+        Ok(())
+    }
+
     fn close(&mut self) {
         self.state
             .lock()
@@ -191,6 +209,25 @@ fn input_and_resize_cross_the_same_small_interface() {
         TransportCommand::Resize {
             columns: 120,
             rows: 40
+        }
+    );
+}
+
+#[test]
+fn agent_navigation_crosses_the_session_interface() {
+    let (mut core, state) = core();
+    core.connect(profile(), Authentication::None, None, 80, 24)
+        .expect("connect starts");
+
+    core.list_agents().expect("list agents");
+    core.focus_agent("w2:p4".into()).expect("focus agent");
+
+    let commands = &state.lock().expect("state").commands;
+    assert_eq!(commands[1], TransportCommand::ListAgents);
+    assert_eq!(
+        commands[2],
+        TransportCommand::FocusAgent {
+            pane_id: "w2:p4".into()
         }
     );
 }

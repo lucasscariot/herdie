@@ -30,6 +30,7 @@
 		B2051117F384AB4475456B11 /* TerminalViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F1D08D1BBEF9626E35D9E6E /* TerminalViewModelTests.swift */; };
 		CE50CB46430FCFDD7C227018 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFD6BC47C146090163021E2 /* PersistenceTests.swift */; };
 		D157E4E731FBBE4DA81FB75B /* ToolbarAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */; };
+		D37D614356E37FA5825E2502 /* AgentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA65BBA44BEA81D5C32EF2EE /* AgentSheet.swift */; };
 		D832F304969BD15C63CAFF4D /* WorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370B030874388FE64E937D85 /* WorkspaceSheet.swift */; };
 		D8747C37B67FEEFBE8960322 /* HerdieTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */; };
 		DC23537AC63B379991B3B20A /* SessionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D807BC07DA6D8CD0DCA1D45 /* SessionClient.swift */; };
@@ -65,7 +66,7 @@
 		275912EF8C7AAB8642B5FB88 /* CredentialVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialVault.swift; sourceTree = "<group>"; };
 		2D31E5BBD54BD7437C708591 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		3557AA67D27EA672F64B3F1E /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
-		35E53CEB3A7C8E6056B41CEC /* Herdie.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Herdie.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		35E53CEB3A7C8E6056B41CEC /* Herdie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Herdie.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		370B030874388FE64E937D85 /* WorkspaceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSheet.swift; sourceTree = "<group>"; };
 		43BF3AB791C0C438616F0E89 /* herdie_core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = herdie_core.swift; path = HerdieCore/herdie_core.swift; sourceTree = "<group>"; };
 		465B0215AB6EA87953D137C4 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
@@ -86,11 +87,12 @@
 		97D68634F6E97FFB7C1232B5 /* ConnectionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionRepository.swift; sourceTree = "<group>"; };
 		9E4CADF6225DC14D0EEB427A /* ConnectionDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDraftTests.swift; sourceTree = "<group>"; };
 		A5A547DDB7FEDA38107D038D /* ToolbarAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarAction.swift; sourceTree = "<group>"; };
+		AA65BBA44BEA81D5C32EF2EE /* AgentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSheet.swift; sourceTree = "<group>"; };
 		B57A286236C94590F268A743 /* HerdieUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HerdieUITests.swift; sourceTree = "<group>"; };
 		C380F9C797D1C6E5FF6B86DD /* HerdieTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HerdieTheme.swift; sourceTree = "<group>"; };
 		CDFD6BC47C146090163021E2 /* PersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceTests.swift; sourceTree = "<group>"; };
 		E9542076E28C97DA66017783 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F56AE6DA700A9294724951BE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +121,7 @@
 		3160DBCF1C05EB21C7AD7D30 /* Terminal */ = {
 			isa = PBXGroup;
 			children = (
+				AA65BBA44BEA81D5C32EF2EE /* AgentSheet.swift */,
 				67B31684897699FF9A03E24F /* TerminalCanvas.swift */,
 				0361BFB2FA03DB3603D27429 /* TerminalScreen.swift */,
 				0AC6B92CEDC69589D0CABF0E /* TerminalViewModel.swift */,
@@ -345,7 +348,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					92EF3E9DB109AA968D94B9A9 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					F631757F6BE74D301CD955E8 = {
@@ -405,6 +407,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D37D614356E37FA5825E2502 /* AgentSheet.swift in Sources */,
 				450E02A4E3ECDE37FAEC554C /* AppEnvironment.swift in Sources */,
 				60B47EDFF7455123376D7872 /* AppPreferences.swift in Sources */,
 				44B1D01CAC34664ECD0DA657 /* ConnectionEditorView.swift in Sources */,
@@ -586,6 +589,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 9Y5725VBNY;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -676,6 +680,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 9Y5725VBNY;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",

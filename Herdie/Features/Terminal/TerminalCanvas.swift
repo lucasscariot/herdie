@@ -17,12 +17,32 @@ struct TerminalScrollAccumulator {
     }
 }
 
+struct TerminalPanNavigation {
+    enum Axis { case horizontal, vertical }
+    private var axis: Axis?
+
+    mutating func update(_ translation: CGPoint) -> Bool {
+        if axis == nil, max(abs(translation.x), abs(translation.y)) >= 10 {
+            axis = abs(translation.x) > abs(translation.y) * 1.5 ? .horizontal : .vertical
+        }
+        return axis == .vertical
+    }
+
+    mutating func finish(_ translation: CGPoint) -> Bool? {
+        defer { self = Self() }
+        guard axis == .horizontal, abs(translation.x) >= 60,
+              abs(translation.x) > abs(translation.y) * 1.5 else { return nil }
+        return translation.x < 0
+    }
+}
+
 struct TerminalCanvas: UIViewRepresentable {
     var terminalFrame: TerminalFrame
     var focusGeneration: Int
     var onInput: (Data) -> Void
     var onResize: (UInt16, UInt16) -> Void
     var onScroll: (Int) -> Void
+    var onSwitchPane: (Bool) -> Void
     var onPaste: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -51,6 +71,7 @@ struct TerminalCanvas: UIViewRepresentable {
         view.onInput = onInput
         view.onResize = onResize
         view.onScroll = onScroll
+        view.onSwitchPane = onSwitchPane
         view.onPaste = onPaste
     }
 
@@ -73,6 +94,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
     var onInput: ((Data) -> Void)?
     var onResize: ((UInt16, UInt16) -> Void)?
     var onScroll: ((Int) -> Void)?
+    var onSwitchPane: ((Bool) -> Void)?
     var onPaste: (() -> Void)?
 
     private let fontSize: CGFloat = 13
@@ -80,6 +102,7 @@ final class TerminalCanvasView: UIView, UIKeyInput {
     private lazy var boldFont = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .bold)
     private var lastGridSize: (UInt16, UInt16)?
     private var scrollAccumulator = TerminalScrollAccumulator()
+    private var panNavigation = TerminalPanNavigation()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -197,19 +220,27 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         switch gesture.state {
         case .began:
             scrollAccumulator.reset()
+            panNavigation = TerminalPanNavigation()
         case .changed, .ended:
-            let rows = scrollAccumulator.consume(
-                translationY: gesture.translation(in: self).y,
-                cellHeight: cellMetrics.height
-            )
-            if rows != 0 {
-                onScroll?(rows)
+            let translation = gesture.translation(in: self)
+            if panNavigation.update(translation) {
+                let rows = scrollAccumulator.consume(
+                    translationY: translation.y,
+                    cellHeight: cellMetrics.height
+                )
+                if rows != 0 {
+                    onScroll?(rows)
+                }
             }
             if gesture.state == .ended {
+                if let forward = panNavigation.finish(translation) {
+                    onSwitchPane?(forward)
+                }
                 scrollAccumulator.reset()
             }
         case .cancelled, .failed:
             scrollAccumulator.reset()
+            panNavigation = TerminalPanNavigation()
         default:
             break
         }

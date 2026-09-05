@@ -12,7 +12,7 @@ use tokio::sync::mpsc::{self as tokio_mpsc, UnboundedReceiver, UnboundedSender};
 
 use crate::{
     Authentication, HostTrust, HostTrustDecision, TransportAdapter, TransportEvent,
-    TransportRequest,
+    TransportRequest, agent,
 };
 
 const REMOTE_COMMAND: &str = r#"/bin/sh -c 'if command -v herdr >/dev/null 2>&1; then exec herdr; elif [ -x "$HOME/.local/bin/herdr" ]; then exec "$HOME/.local/bin/herdr"; elif [ -x /opt/homebrew/bin/herdr ]; then exec /opt/homebrew/bin/herdr; elif [ -x /usr/local/bin/herdr ]; then exec /usr/local/bin/herdr; else printf "Herdie: herdr executable not found\n" >&2; exit 127; fi'"#;
@@ -25,6 +25,8 @@ const MAX_POLL_DATA_BYTES: usize = 256 * 1024;
 enum Control {
     Send(Vec<u8>),
     Resize { columns: u16, rows: u16 },
+    ListAgents,
+    FocusAgent { command: String },
     Close,
 }
 
@@ -108,6 +110,15 @@ impl TransportAdapter for SshTransport {
 
     fn resize(&mut self, columns: u16, rows: u16) -> Result<(), String> {
         self.send_control(Control::Resize { columns, rows })
+    }
+
+    fn list_agents(&mut self) -> Result<(), String> {
+        self.send_control(Control::ListAgents)
+    }
+
+    fn focus_agent(&mut self, pane_id: String) -> Result<(), String> {
+        let command = agent::focus_command(&pane_id)?;
+        self.send_control(Control::FocusAgent { command })
     }
 
     fn close(&mut self) {
@@ -228,6 +239,18 @@ async fn run_session(
                         .window_change(u32::from(columns), u32::from(rows), 0, 0)
                         .await
                         .map_err(|error| format!("failed to resize remote terminal: {error}"))?,
+                    Some(Control::ListAgents) => {
+                        let output = run_control_command(&session, &agent::list_command()).await;
+                        match output.and_then(|bytes| agent::parse_list(&bytes)) {
+                            Ok(agents) => send_event(&events, TransportEvent::AgentsListed(agents)),
+                            Err(message) => send_event(&events, TransportEvent::ControlFailed { message }),
+                        }
+                    }
+                    Some(Control::FocusAgent { command }) => {
+                        if let Err(message) = run_control_command(&session, &command).await {
+                            send_event(&events, TransportEvent::ControlFailed { message });
+                        }
+                    }
                     Some(Control::Close) | None => {
                         let _ = channel.eof().await;
                         let _ = session
@@ -259,6 +282,60 @@ async fn run_session(
             }
         }
     }
+}
+
+const MAX_CONTROL_OUTPUT_BYTES: usize = 1024 * 1024;
+
+async fn run_control_command(
+    session: &client::Handle<ClientHandler>,
+    command: &str,
+) -> Result<Vec<u8>, String> {
+    let mut channel = session
+        .channel_open_session()
+        .await
+        .map_err(|error| format!("failed to open Herdr control channel: {error}"))?;
+    channel
+        .exec(true, command)
+        .await
+        .map_err(|error| format!("failed to run Herdr control command: {error}"))?;
+
+    let mut output = Vec::new();
+    let mut error_output = Vec::new();
+    let mut exit_status = None;
+    while let Some(message) = channel.wait().await {
+        match message {
+            ChannelMsg::Data { data } => append_control_output(&mut output, &data)?,
+            ChannelMsg::ExtendedData { data, .. } => {
+                append_control_output(&mut error_output, &data)?;
+            }
+            ChannelMsg::ExitStatus {
+                exit_status: status,
+            } => exit_status = Some(status),
+            ChannelMsg::Close => break,
+            _ => {}
+        }
+    }
+
+    match exit_status {
+        Some(0) => Ok(output),
+        Some(status) => {
+            let detail = String::from_utf8_lossy(&error_output).trim().to_string();
+            if detail.is_empty() {
+                Err(format!("Herdr control command exited with status {status}"))
+            } else {
+                Err(detail)
+            }
+        }
+        None => Err("Herdr control command ended without an exit status".into()),
+    }
+}
+
+fn append_control_output(target: &mut Vec<u8>, data: &[u8]) -> Result<(), String> {
+    if target.len().saturating_add(data.len()) > MAX_CONTROL_OUTPUT_BYTES {
+        return Err("Herdr returned too much agent data".into());
+    }
+    target.extend_from_slice(data);
+    Ok(())
 }
 
 async fn establish_session(
@@ -334,7 +411,7 @@ async fn await_setup<T>(
                 Some(Control::Resize { columns, rows }) => {
                     *pending_resize = Some((columns, rows));
                 }
-                Some(Control::Send(_)) => {}
+                Some(Control::Send(_) | Control::ListAgents | Control::FocusAgent { .. }) => {}
                 Some(Control::Close) | None => return SetupOutcome::Cancelled,
             },
             result = &mut setup => return SetupOutcome::Ready(result),

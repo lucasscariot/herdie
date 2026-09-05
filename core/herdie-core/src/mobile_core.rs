@@ -4,8 +4,8 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ConnectionProfile, CoreError, DisconnectReason, SessionAction, SessionMachine, SessionState,
-    TerminalModel, TerminalUpdate,
+    AgentSnapshot, ConnectionProfile, CoreError, DisconnectReason, SessionAction, SessionMachine,
+    SessionState, TerminalModel, TerminalUpdate,
 };
 
 const LOCAL_SCROLLBACK_LINES: usize = 1_000;
@@ -50,6 +50,8 @@ pub enum TransportCommand {
     Open(TransportRequest),
     Send(Vec<u8>),
     Resize { columns: u16, rows: u16 },
+    ListAgents,
+    FocusAgent { pane_id: String },
     Close,
     StopRemoteHerdr,
 }
@@ -60,6 +62,8 @@ pub enum TransportEvent {
     HostKeyUnknown { presented: String },
     HostKeyMismatch { expected: String, presented: String },
     Data(Vec<u8>),
+    AgentsListed(Vec<AgentSnapshot>),
+    ControlFailed { message: String },
     Closed,
     RemoteExited { message: String },
     Failed { message: String },
@@ -69,6 +73,8 @@ pub trait TransportAdapter: Send {
     fn open(&mut self, request: TransportRequest) -> Result<(), String>;
     fn send(&mut self, input: Vec<u8>) -> Result<(), String>;
     fn resize(&mut self, columns: u16, rows: u16) -> Result<(), String>;
+    fn list_agents(&mut self) -> Result<(), String>;
+    fn focus_agent(&mut self, pane_id: String) -> Result<(), String>;
     fn close(&mut self);
     fn poll(&mut self) -> Vec<TransportEvent>;
 }
@@ -79,6 +85,7 @@ pub enum CoreEventKind {
     TerminalFrame,
     HostKeyUnknown,
     HostKeyMismatch,
+    AgentsUpdated,
     Error,
 }
 
@@ -90,6 +97,7 @@ pub struct CoreEvent {
     pub message: Option<String>,
     pub expected_host_key: Option<String>,
     pub presented_host_key: Option<String>,
+    pub agents: Option<Vec<AgentSnapshot>>,
 }
 
 impl CoreEvent {
@@ -101,6 +109,7 @@ impl CoreEvent {
             message: None,
             expected_host_key: None,
             presented_host_key: None,
+            agents: None,
         }
     }
 
@@ -112,6 +121,7 @@ impl CoreEvent {
             message: None,
             expected_host_key: None,
             presented_host_key: None,
+            agents: None,
         }
     }
 
@@ -123,6 +133,19 @@ impl CoreEvent {
             message: Some(message),
             expected_host_key: None,
             presented_host_key: None,
+            agents: None,
+        }
+    }
+
+    fn agents_updated(agents: Vec<AgentSnapshot>) -> Self {
+        Self {
+            kind: CoreEventKind::AgentsUpdated,
+            state: None,
+            terminal_update: None,
+            message: None,
+            expected_host_key: None,
+            presented_host_key: None,
+            agents: Some(agents),
         }
     }
 }
@@ -212,6 +235,18 @@ impl MobileCore {
             .map_err(|message| CoreError::Transport { message })
     }
 
+    pub fn list_agents(&mut self) -> Result<(), CoreError> {
+        self.transport
+            .list_agents()
+            .map_err(|message| CoreError::Transport { message })
+    }
+
+    pub fn focus_agent(&mut self, pane_id: String) -> Result<(), CoreError> {
+        self.transport
+            .focus_agent(pane_id)
+            .map_err(|message| CoreError::Transport { message })
+    }
+
     pub fn poll_events(&mut self) -> Vec<CoreEvent> {
         let transport_events = self.transport.poll();
         let mut received_terminal_data = false;
@@ -255,6 +290,7 @@ impl MobileCore {
                     message: None,
                     expected_host_key: None,
                     presented_host_key: Some(presented),
+                    agents: None,
                 });
                 self.machine.disconnect(DisconnectReason::HostKeyRejected);
                 self.pending
@@ -272,12 +308,19 @@ impl MobileCore {
                     message: None,
                     expected_host_key: Some(expected),
                     presented_host_key: Some(presented),
+                    agents: None,
                 });
                 self.machine.disconnect(DisconnectReason::HostKeyRejected);
                 self.pending
                     .push_back(CoreEvent::state_changed(self.machine.state()));
             }
             TransportEvent::Data(bytes) => self.terminal.process(&bytes),
+            TransportEvent::AgentsListed(agents) => {
+                self.pending.push_back(CoreEvent::agents_updated(agents));
+            }
+            TransportEvent::ControlFailed { message } => {
+                self.pending.push_back(CoreEvent::error(message));
+            }
             TransportEvent::Closed => {
                 self.reconnect_attempt = false;
                 self.machine.disconnect(DisconnectReason::NetworkLost);

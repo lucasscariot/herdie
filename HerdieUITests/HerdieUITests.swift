@@ -14,6 +14,30 @@ final class HerdieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Connect"].exists)
     }
 
+    func testConnectionEditorAcceptsTypingAcrossSSHFields() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage"]
+        app.launch()
+        app.buttons["Add connection"].tap()
+
+        let started = ContinuousClock.now
+        app.textFields["connection-name"].tap()
+        app.textFields["connection-name"].typeText("Mac Studio")
+        app.textFields["connection-host"].tap()
+        app.textFields["connection-host"].typeText("studio.local")
+        app.textFields["connection-username"].tap()
+        app.textFields["connection-username"].typeText("lucas")
+        app.buttons["Password"].tap()
+        app.secureTextFields["connection-password"].tap()
+        app.secureTextFields["connection-password"].typeText("secret")
+        let elapsed = started.duration(to: .now)
+
+        XCTAssertEqual(app.textFields["connection-name"].value as? String, "Mac Studio")
+        XCTAssertEqual(app.textFields["connection-host"].value as? String, "studio.local")
+        XCTAssertEqual(app.textFields["connection-username"].value as? String, "lucas")
+        XCTAssertLessThan(elapsed, .seconds(10), "SSH form input took \(elapsed)")
+    }
+
     func testSettingsExposeToolbarAndComposerControls() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-storage"]

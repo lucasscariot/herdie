@@ -7,6 +7,7 @@ struct ConnectionEditorView: View {
     @State private var draft: ConnectionDraft
     @State private var errorMessage: String?
     @State private var importingKey = false
+    @FocusState private var focusedField: ConnectionField?
 
     let onSave: (ConnectionDraft) throws -> Void
 
@@ -21,32 +22,36 @@ struct ConnectionEditorView: View {
                 HerdieTheme.background.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        field("Name") {
+                        field("Name", focus: .name) {
                             TextField("My Mac", text: $draft.name)
                                 .textContentType(.name)
                                 .accessibilityLabel("Connection name")
+                                .accessibilityIdentifier("connection-name")
                         }
 
                         HStack(alignment: .top, spacing: 12) {
-                            field("Host") {
+                            field("Host", focus: .host) {
                                 TextField("192.168.1.100", text: $draft.host)
                                     .textContentType(.URL)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
+                                    .accessibilityIdentifier("connection-host")
                             }
                             .frame(maxWidth: .infinity)
-                            field("Port") {
+                            field("Port", focus: .port) {
                                 TextField("22", text: $draft.port)
                                     .keyboardType(.numberPad)
+                                    .accessibilityIdentifier("connection-port")
                             }
                             .frame(width: 104)
                         }
 
-                        field("Username") {
+                        field("Username", focus: .username) {
                             TextField("your-username", text: $draft.username)
                                 .textContentType(.username)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
+                                .accessibilityIdentifier("connection-username")
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
@@ -129,7 +134,7 @@ struct ConnectionEditorView: View {
             .padding(16)
             .herdieCard(cornerRadius: 16)
         case .password:
-            field("Password") {
+            field("Password", focus: .password) {
                 SecureField(
                     draft.canKeepExistingCredential
                         ? "Leave blank to keep saved password"
@@ -138,6 +143,7 @@ struct ConnectionEditorView: View {
                 )
                     .textContentType(.password)
                     .privacySensitive()
+                    .accessibilityIdentifier("connection-password")
             }
         case .privateKey:
             VStack(alignment: .leading, spacing: 12) {
@@ -158,7 +164,12 @@ struct ConnectionEditorView: View {
                     .background(HerdieTheme.raisedSurface, in: RoundedRectangle(cornerRadius: 16))
                     .privacySensitive()
                     .accessibilityLabel("Private key")
-                field("Passphrase (optional)") {
+                    .focused($focusedField, equals: .privateKey)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(TapGesture().onEnded {
+                        focusedField = .privateKey
+                    })
+                field("Passphrase (optional)", focus: .passphrase) {
                     SecureField("Passphrase", text: $draft.passphrase)
                         .privacySensitive()
                 }
@@ -173,15 +184,21 @@ struct ConnectionEditorView: View {
 
     private func field<Content: View>(
         _ label: String,
+        focus: ConnectionField,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 9) {
             Text(label)
                 .font(.headline)
             content()
+                .focused($focusedField, equals: focus)
                 .padding(.horizontal, 15)
-                .frame(minHeight: 56)
+                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
                 .background(HerdieTheme.raisedSurface, in: RoundedRectangle(cornerRadius: 16))
+                .contentShape(Rectangle())
+                .simultaneousGesture(TapGesture().onEnded {
+                    focusedField = focus
+                })
         }
     }
 
@@ -205,4 +222,14 @@ struct ConnectionEditorView: View {
             errorMessage = "The selected private key could not be read."
         }
     }
+}
+
+private enum ConnectionField: Hashable {
+    case name
+    case host
+    case port
+    case username
+    case password
+    case privateKey
+    case passphrase
 }

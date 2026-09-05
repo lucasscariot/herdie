@@ -51,6 +51,8 @@ final class TerminalViewModel {
     private(set) var state: AppSessionState = .idle
     private(set) var frame = TerminalFrame.empty
     private(set) var controlArmed = false
+    private(set) var agents: [RunningAgent] = []
+    private(set) var isLoadingAgents = false
     var pendingHostKey: PendingHostKey?
     var errorMessage: String?
     var composerDraft = ""
@@ -238,10 +240,40 @@ final class TerminalViewModel {
         send(Data([0x00, 0x43]))
     }
 
+    func switchPane(forward: Bool) {
+        // Herdr cycles the current tab's panes; a single pane stays focused.
+        send(Data(forward ? [0x00, 0x09] : [0x00, 0x1B, 0x5B, 0x5A]))
+    }
+
     func scroll(by delta: Int) {
         guard state == .attached, delta != 0 else { return }
         do {
             try session.scroll(lines: Int32(clamping: delta))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshAgents() {
+        guard state == .attached, !isLoadingAgents else { return }
+        isLoadingAgents = true
+        do {
+            try session.listAgents()
+        } catch {
+            isLoadingAgents = false
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func focusAgent(_ agent: RunningAgent) {
+        guard state == .attached else { return }
+        do {
+            try session.focusAgent(paneID: agent.paneID)
+            agents = agents.map { candidate in
+                var updated = candidate
+                updated.focused = candidate.id == agent.id
+                return updated
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -306,7 +338,11 @@ final class TerminalViewModel {
                 expected: expected,
                 presented: presented
             )
+        case let .agentsUpdated(agents):
+            self.agents = agents
+            isLoadingAgents = false
         case let .error(message):
+            isLoadingAgents = false
             errorMessage = message
         }
     }

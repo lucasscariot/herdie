@@ -47,6 +47,14 @@ impl HerdieCore {
         self.core().scroll(lines)
     }
 
+    pub fn list_agents(&self) -> Result<(), CoreError> {
+        self.core().list_agents()
+    }
+
+    pub fn focus_agent(&self, pane_id: String) -> Result<(), CoreError> {
+        self.core().focus_agent(pane_id)
+    }
+
     pub fn poll_events(&self) -> Vec<CoreEvent> {
         self.core().poll_events()
     }

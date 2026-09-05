@@ -27,11 +27,34 @@ struct SessionConnectRequest: Equatable, Sendable {
     var rows: UInt16
 }
 
+enum RunningAgentStatus: Equatable, Sendable {
+    case unknown
+    case idle
+    case working
+    case blocked
+    case done
+}
+
+struct RunningAgent: Identifiable, Equatable, Sendable {
+    var id: String { paneID }
+    var agent: String
+    var status: RunningAgentStatus
+    var workspaceID: String
+    var tabID: String
+    var paneID: String
+    var title: String
+    var provider: String?
+    var context: String?
+    var limit: String?
+    var focused: Bool
+}
+
 enum SessionEvent: Equatable, Sendable {
     case stateChanged(AppSessionState)
     case terminalFrame(TerminalUpdate)
     case hostKeyUnknown(presented: String)
     case hostKeyMismatch(expected: String, presented: String)
+    case agentsUpdated([RunningAgent])
     case error(String)
 }
 
@@ -41,6 +64,8 @@ protocol SessionClient: AnyObject {
     func send(_ data: Data) throws
     func resize(columns: UInt16, rows: UInt16) throws
     func scroll(lines: Int32) throws
+    func listAgents() throws
+    func focusAgent(paneID: String) throws
     func poll() async -> [SessionEvent]
     func disconnect(_ reason: SessionDisconnectReason)
 }
@@ -50,6 +75,8 @@ final class InMemorySessionClient: SessionClient {
     var sent: [Data] = []
     var sizes: [(UInt16, UInt16)] = []
     var scrollDeltas: [Int32] = []
+    var agentListRequestCount = 0
+    var focusedAgentPaneIDs: [String] = []
     var events: [SessionEvent] = []
     var disconnectReasons: [SessionDisconnectReason] = []
 
@@ -67,6 +94,14 @@ final class InMemorySessionClient: SessionClient {
 
     func scroll(lines: Int32) throws {
         scrollDeltas.append(lines)
+    }
+
+    func listAgents() throws {
+        agentListRequestCount += 1
+    }
+
+    func focusAgent(paneID: String) throws {
+        focusedAgentPaneIDs.append(paneID)
     }
 
     func poll() async -> [SessionEvent] {

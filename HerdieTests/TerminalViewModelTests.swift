@@ -335,12 +335,55 @@ final class TerminalViewModelTests: XCTestCase {
         model.switchWorkspacePrevious()
         model.switchWorkspaceNext()
         model.createWorkspace()
+        model.switchPane(forward: true)
+        model.switchPane(forward: false)
 
         XCTAssertEqual(session.sent, [
             Data([0x00, 0x50]),
             Data([0x00, 0x4E]),
-            Data([0x00, 0x43])
+            Data([0x00, 0x43]),
+            Data([0x00, 0x09]),
+            Data([0x00, 0x1B, 0x5B, 0x5A])
         ])
+    }
+
+    func testAgentListAndFocusUseStructuredSessionControls() async {
+        let session = InMemorySessionClient()
+        let model = TerminalViewModel(
+            connection: .fixture(),
+            repository: InMemoryConnectionRepository(),
+            credentialVault: InMemoryCredentialVault(),
+            session: session
+        )
+        session.events.append(.stateChanged(.attached))
+        await model.poll()
+
+        model.refreshAgents()
+        XCTAssertTrue(model.isLoadingAgents)
+        XCTAssertEqual(session.agentListRequestCount, 1)
+
+        let agent = RunningAgent(
+            agent: "codex",
+            status: .working,
+            workspaceID: "w2",
+            tabID: "w2:t1",
+            paneID: "w2:p4",
+            title: "herdr-ios",
+            provider: "codex",
+            context: "50k",
+            limit: "7d 79%",
+            focused: false
+        )
+        session.events.append(.agentsUpdated([agent]))
+        await model.poll()
+
+        XCTAssertEqual(model.agents, [agent])
+        XCTAssertFalse(model.isLoadingAgents)
+
+        model.focusAgent(agent)
+
+        XCTAssertEqual(session.focusedAgentPaneIDs, ["w2:p4"])
+        XCTAssertTrue(model.agents[0].focused)
     }
 }
 
