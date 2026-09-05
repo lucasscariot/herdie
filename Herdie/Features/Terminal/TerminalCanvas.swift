@@ -112,7 +112,8 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         isAccessibilityElement = true
         accessibilityLabel = "Terminal"
         accessibilityTraits = [.updatesFrequently]
-        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(focusTerminal)))
+        accessibilityHint = "Tap to show or hide the keyboard"
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(toggleKeyboard)))
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.cancelsTouchesInView = false
         addGestureRecognizer(pan)
@@ -212,8 +213,12 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         }
     }
 
-    @objc private func focusTerminal() {
-        becomeFirstResponder()
+    @objc private func toggleKeyboard() {
+        if isFirstResponder {
+            resignFirstResponder()
+        } else {
+            becomeFirstResponder()
+        }
     }
 
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
