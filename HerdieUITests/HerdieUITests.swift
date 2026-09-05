@@ -2,6 +2,16 @@ import XCTest
 
 @MainActor
 final class HerdieUITests: XCTestCase {
+    func testLaunchPerformance() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage", "--seed-demo"]
+        let options = XCTMeasureOptions()
+        options.iterationCount = 3
+        measure(metrics: [XCTApplicationLaunchMetric()], options: options) {
+            app.launch()
+        }
+    }
+
     func testHomeMakerLinkIsAvailableOnFirstLaunch() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-storage"]
@@ -41,6 +51,7 @@ final class HerdieUITests: XCTestCase {
         app.staticTexts["Mac Studio"].tap()
         let agents = app.buttons["Running agents"]
         XCTAssertTrue(agents.waitForExistence(timeout: 3))
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "Opening a terminal should not load the keyboard until requested")
         XCTAssertGreaterThanOrEqual(agents.frame.width, 44)
         XCTAssertEqual(agents.frame.height, 44, accuracy: 1)
         XCTAssertEqual(agents.frame.midY, app.buttons["Show keyboard"].frame.midY, accuracy: 1)

@@ -59,6 +59,8 @@ enum SessionEvent: Equatable, Sendable {
 }
 
 @MainActor
+/// Commands submit in order without waiting for core work. Immediate rejection may
+/// throw; failures after submission arrive as error events through poll().
 protocol SessionClient: AnyObject {
     func connect(_ request: SessionConnectRequest) throws
     func send(_ data: Data) throws

@@ -3,6 +3,39 @@ import XCTest
 
 @MainActor
 final class TerminalViewModelTests: XCTestCase {
+    func testCommandSubmissionDoesNotWaitForBusyCoreAndPreservesOrder() async {
+        let queue = DispatchQueue(label: "HerdieTests.busy-core")
+        queue.suspend()
+        let commands = SessionCommandQueue(queue: queue)
+        let started = ContinuousClock.now
+        commands.enqueue { throw QueueTestError.first }
+        commands.enqueue { throw QueueTestError.second }
+        let elapsed = started.duration(to: .now)
+        queue.resume()
+        XCTAssertLessThan(elapsed, .milliseconds(100))
+        let events = await commands.poll { [] }
+        XCTAssertEqual(events, [.error("first"), .error("second")])
+        let next = await commands.poll { [] }
+        XCTAssertTrue(next.isEmpty, "Command errors must only be delivered once")
+    }
+
+    func testDrawingOnlyVisitsRowsIntersectingDamage() {
+        XCTAssertEqual(TerminalCanvasView.drawingRows(
+            in: CGRect(x: 0, y: 40, width: 400, height: 20), cellHeight: 20, rows: 100
+        ), 2..<3)
+        XCTAssertEqual(TerminalCanvasView.drawingRows(
+            in: CGRect(x: 0, y: -10, width: 400, height: 40), cellHeight: 20, rows: 100
+        ), 0..<2)
+        XCTAssertEqual(TerminalCanvasView.drawingRows(
+            in: CGRect(x: 0, y: 3000, width: 400, height: 20), cellHeight: 20, rows: 100
+        ), 100..<100)
+    }
+
+    private enum QueueTestError: LocalizedError {
+        case first, second
+        var errorDescription: String? { self == .first ? "first" : "second" }
+    }
+
     func testConnectLoadsCredentialAcrossTheSessionInterface() throws {
         let connection = SavedConnection.fixture(authentication: .password)
         let repository = InMemoryConnectionRepository(connections: [connection])

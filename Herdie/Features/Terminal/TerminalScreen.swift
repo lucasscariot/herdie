@@ -39,13 +39,9 @@ struct TerminalScreen: View {
             VStack(spacing: 0) {
                 terminalHeader
                 ZStack {
-                    TerminalCanvas(
-                        terminalFrame: model.frame,
-                        focusGeneration: model.keyboardGeneration,
-                        onInput: model.sendInput,
+                    LiveTerminalCanvas(
+                        model: model,
                         onResize: handleResize,
-                        onScroll: model.scroll,
-                        onSwitchPane: model.switchPane,
                         onPaste: paste
                     )
                     .accessibilityIdentifier("terminal-canvas")
@@ -327,6 +323,25 @@ struct TerminalScreen: View {
         hasEnded = true
         model.disconnect()
         onSessionEnded(model.frame)
+    }
+}
+
+/// Observe high-frequency frame changes here, not in the surrounding screen.
+private struct LiveTerminalCanvas: View {
+    let model: TerminalViewModel
+    let onResize: (UInt16, UInt16) -> Void
+    let onPaste: () -> Void
+
+    var body: some View {
+        TerminalCanvas(
+            terminalFrame: model.frame,
+            focusGeneration: model.keyboardGeneration,
+            onInput: model.sendInput,
+            onResize: onResize,
+            onScroll: model.scroll,
+            onSwitchPane: model.switchPane,
+            onPaste: onPaste
+        )
     }
 }
 

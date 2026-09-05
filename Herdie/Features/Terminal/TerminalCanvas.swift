@@ -53,6 +53,7 @@ struct TerminalCanvas: UIViewRepresentable {
         let view = TerminalCanvasView()
         configure(view)
         view.focusGeneration = focusGeneration
+        context.coordinator.lastFocusGeneration = focusGeneration
         return view
     }
 
@@ -148,7 +149,12 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         guard terminalFrame.columns > 0, terminalFrame.rows > 0 else { return }
 
         let metrics = cellMetrics
-        for cell in terminalFrame.cells {
+        // Cells are row-major. Skip rows outside the dirty rect before touching glyphs.
+        let visibleRows = Self.drawingRows(in: rect, cellHeight: metrics.height, rows: Int(terminalFrame.rows))
+        let columns = Int(terminalFrame.columns)
+        let start = min(visibleRows.lowerBound * columns, terminalFrame.cells.count)
+        let end = min(visibleRows.upperBound * columns, terminalFrame.cells.count)
+        for cell in terminalFrame.cells[start..<end] {
             let origin = CGPoint(
                 x: CGFloat(cell.column) * metrics.width,
                 y: CGFloat(cell.row) * metrics.height
@@ -253,9 +259,16 @@ final class TerminalCanvasView: UIView, UIKeyInput {
         }
     }
 
-    private var cellMetrics: CGSize {
+    private lazy var cellMetrics: CGSize = {
         let sample = ("W" as NSString).size(withAttributes: [.font: regularFont])
         return CGSize(width: ceil(sample.width), height: ceil(regularFont.lineHeight + 2))
+    }()
+
+    static func drawingRows(in rect: CGRect, cellHeight: CGFloat, rows: Int) -> Range<Int> {
+        guard cellHeight > 0, rows > 0, !rect.isEmpty else { return 0..<0 }
+        let first = max(0, min(rows, Int(floor(rect.minY / cellHeight))))
+        let last = max(first, min(rows, Int(ceil(rect.maxY / cellHeight))))
+        return first..<last
     }
 
     private func reportGridSize() {

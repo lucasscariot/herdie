@@ -2,7 +2,7 @@ import Foundation
 
 final class RustSessionClient: SessionClient {
     private let core = HerdieCore()
-    private let coreQueue = DispatchQueue(label: "com.lucasscariot.herdie.ssh-core", qos: .userInitiated)
+    private let commands = SessionCommandQueue()
 
     func connect(_ request: SessionConnectRequest) throws {
         debugLog("connect requested for \(request.connection.destination)")
@@ -22,7 +22,7 @@ final class RustSessionClient: SessionClient {
             .privateKey(key: key, passphrase: passphrase)
         }
         let core = core
-        try coreQueue.sync {
+        commands.enqueue {
             try core.connect(
                 profile: profile,
                 authentication: authentication,
@@ -36,46 +36,43 @@ final class RustSessionClient: SessionClient {
 
     func send(_ data: Data) throws {
         let core = core
-        try coreQueue.sync {
+        commands.enqueue {
             try core.send(input: data)
         }
     }
 
     func resize(columns: UInt16, rows: UInt16) throws {
         let core = core
-        try coreQueue.sync {
+        commands.enqueue {
             try core.resize(columns: columns, rows: rows)
         }
     }
 
     func scroll(lines: Int32) throws {
         let core = core
-        try coreQueue.sync {
+        commands.enqueue {
             try core.scroll(lines: lines)
         }
     }
 
     func listAgents() throws {
         let core = core
-        try coreQueue.sync {
+        commands.enqueue {
             try core.listAgents()
         }
     }
 
     func focusAgent(paneID: String) throws {
         let core = core
-        try coreQueue.sync {
+        commands.enqueue {
             try core.focusAgent(paneId: paneID)
         }
     }
 
     func poll() async -> [SessionEvent] {
         let core = core
-        let coreQueue = coreQueue
-        return await withCheckedContinuation { continuation in
-            coreQueue.async {
-                continuation.resume(returning: core.pollEvents().compactMap(Self.map))
-            }
+        return await commands.poll {
+            core.pollEvents().compactMap(Self.map)
         }
     }
 
@@ -86,7 +83,7 @@ final class RustSessionClient: SessionClient {
         case .networkLost: .networkLost
         }
         let core = core
-        coreQueue.sync {
+        commands.enqueue {
             core.disconnect(reason: mapped)
         }
     }
@@ -159,5 +156,33 @@ final class RustSessionClient: SessionClient {
 
     private func debugLog(_ message: String) {
         Self.debugLog(message)
+    }
+}
+
+/// All state below is confined to queue. Submission never waits on the UI thread.
+/// Commands and polls execute FIFO; command failures are delivered by the next poll.
+final class SessionCommandQueue: @unchecked Sendable {
+    private let queue: DispatchQueue
+    private var failures: [SessionEvent] = []
+
+    init(queue: DispatchQueue = DispatchQueue(label: "com.lucasscariot.herdie.ssh-core", qos: .userInitiated)) {
+        self.queue = queue
+    }
+
+    func enqueue(_ command: @escaping @Sendable () throws -> Void) {
+        queue.async { [self] in
+            do { try command() }
+            catch { failures.append(.error(error.localizedDescription)) }
+        }
+    }
+
+    func poll(_ read: @escaping @Sendable () -> [SessionEvent]) async -> [SessionEvent] {
+        await withCheckedContinuation { continuation in
+            queue.async { [self] in
+                let events = read() + failures
+                failures.removeAll(keepingCapacity: true)
+                continuation.resume(returning: events)
+            }
+        }
     }
 }
