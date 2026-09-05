@@ -295,14 +295,11 @@ struct AboutView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(HerdieTheme.accent)
-                        .frame(width: 112, height: 112)
-                    Image(systemName: "terminal.fill")
-                        .font(.system(size: 48, weight: .bold))
-                        .foregroundStyle(HerdieTheme.onAccent)
-                }
+                Image("HerdieLogo")
+                    .resizable()
+                    .frame(width: 112, height: 112)
+                    .clipShape(RoundedRectangle(cornerRadius: 28))
+                    .accessibilityHidden(true)
                 VStack(spacing: 5) {
                     Text("Herdie")
                         .font(.largeTitle.bold())

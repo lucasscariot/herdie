@@ -85,14 +85,11 @@ struct DashboardView: View {
 
     private var header: some View {
         HStack {
-            ZStack {
-                Circle()
-                    .fill(.thinMaterial)
-                    .frame(width: 54, height: 54)
-                Image(systemName: "terminal.fill")
-                    .font(.title3)
-                    .foregroundStyle(HerdieTheme.accent)
-            }
+            Image("HerdieLogo")
+                .resizable()
+                .frame(width: 54, height: 54)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Herdie")
                     .font(.title2.bold())

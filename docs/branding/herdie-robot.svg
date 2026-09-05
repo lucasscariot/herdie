@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Herdie robot</title>
+  <desc id="desc">A friendly violet terminal robot with greater-than and less-than eyes and a small cursor smile.</desc>
+  <rect width="1024" height="1024" rx="224" fill="#101020"/>
+  <!-- Antenna and ears stay broad enough to survive small icon sizes. -->
+  <path d="M512 300V236" stroke="#A49CFF" stroke-width="40" stroke-linecap="round"/>
+  <circle cx="512" cy="212" r="36" fill="#70B4FF"/>
+  <rect x="168" y="444" width="80" height="152" rx="36" fill="#7970D9"/>
+  <rect x="776" y="444" width="80" height="152" rx="36" fill="#7970D9"/>
+  <rect x="224" y="292" width="576" height="456" rx="144" fill="#A49CFF"/>
+  <!-- The face is a terminal window; both eyes are drawn paths, not a font. -->
+  <rect x="280" y="372" width="464" height="304" rx="88" fill="#101020"/>
+  <g stroke="#EDEBFF" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m368 456 56 48-56 48"/>
+    <path d="m656 456-56 48 56 48"/>
+    <path d="M480 604h64"/>
+  </g>
+</svg>
