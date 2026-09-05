@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import StoreKit
 
 @MainActor
 @Observable
@@ -9,7 +8,6 @@ final class SupportConfiguration {
 
     func refresh() async {
         isEnabled = false
-        guard await Storefront.current?.countryCode == "USA" else { return }
         do {
             let url = URL(string: "https://lucasscariot.github.io/herdie/config.json")!
             var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
