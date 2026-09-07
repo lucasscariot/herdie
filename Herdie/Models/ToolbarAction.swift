@@ -59,6 +59,6 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 
     static let defaults: [ToolbarAction] = [
-        .control, .escape, .tab, .herdrPrefix, .up, .paste, .composer, .keyboard
+        .control, .escape, .tab, .up, .down, .left, .right, .paste, .herdrPrefix, .composer, .keyboard
     ]
 }

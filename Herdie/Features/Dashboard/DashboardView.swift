@@ -14,24 +14,30 @@ struct DashboardView: View {
     private var model: DashboardViewModel { environment.dashboard }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            HerdieBackground()
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 28) {
-                    header
-                    sessions
-                    connections
-                    if environment.preferences.showsMakerCard {
-                        makerCard
-                    }
+        NavigationStack {
+            List {
+                connections
+                sessions
+                if environment.preferences.showsMakerCard {
+                    Section { makerCard }
+                }
+                Section {
                     privacyFooter
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 120)
+                .listRowBackground(Color.clear)
             }
-            addButton
-                .padding(.trailing, 24)
-                .padding(.bottom, 24)
+            .listStyle(.insetGrouped)
+            .navigationTitle("Herdie")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Settings", systemImage: "gearshape") {
+                        showingSettings = true
+                    }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    addButton
+                }
+            }
         }
         .sheet(isPresented: $showingConnectionEditor) {
             ConnectionEditorView(draft: ConnectionDraft()) { draft in
@@ -83,31 +89,6 @@ struct DashboardView: View {
         }
     }
 
-    private var header: some View {
-        HStack {
-            Image("HerdieLogo")
-                .resizable()
-                .frame(width: 54, height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Herdie")
-                    .font(.title2.bold())
-                Text("Your Herdr sessions, anywhere")
-                    .font(.caption)
-                    .foregroundStyle(HerdieTheme.secondary)
-            }
-            Spacer()
-            RoundIconButton(
-                systemImage: "gearshape",
-                accessibilityLabel: "Settings"
-            ) {
-                showingSettings = true
-            }
-        }
-        .padding(.top, 12)
-    }
-
     private var makerCard: some View {
         HStack(alignment: .top, spacing: 8) {
             Button {
@@ -117,7 +98,7 @@ struct DashboardView: View {
                     Text("Enjoying Herdie?").font(.headline)
                     Text("I’m Lucas, the maker. Discover my other projects and follow what I’m building.")
                         .font(.subheadline)
-                        .foregroundStyle(HerdieTheme.secondary)
+                        .foregroundStyle(Color(uiColor: .secondaryLabel))
                     Label("Meet the maker", systemImage: "arrow.up.right")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(HerdieTheme.accent)
@@ -140,62 +121,34 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var sessions: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: "Sessions")
-            if let recentSession {
+        if let recentSession {
+            Section("Recent session") {
                 Button {
                     activeConnection = recentSession.connection
                 } label: {
                     RecentSessionCard(session: recentSession)
                 }
                 .buttonStyle(.plain)
-            } else {
-                HStack(spacing: 14) {
-                    Image(systemName: "rectangle.stack.badge.play")
-                        .font(.title2)
-                        .foregroundStyle(HerdieTheme.accent)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("No recent session")
-                            .font(.headline)
-                        Text("Connect to a host to attach to Herdr.")
-                            .font(.subheadline)
-                            .foregroundStyle(HerdieTheme.secondary)
-                    }
-                    Spacer()
-                }
-                .padding(18)
-                .herdieCard()
             }
         }
     }
 
     private var connections: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                SectionLabel(title: "Connections", trailing: nil)
-                if !model.connections.isEmpty {
-                    Button("Manage") {
-                        showingConnectionManager = true
-                    }
-                    .font(.caption.weight(.medium))
-                }
-            }
+        Section {
             if model.connections.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "server.rack")
-                        .font(.system(size: 30))
-                        .foregroundStyle(HerdieTheme.secondary)
+                        .font(.largeTitle)
+                        .foregroundStyle(Color(uiColor: .secondaryLabel))
                     Text("Add your first SSH host")
                         .font(.headline)
                     Text("Passwords and private keys stay in Keychain on this device.")
                         .font(.subheadline)
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(HerdieTheme.secondary)
+                        .foregroundStyle(Color(uiColor: .secondaryLabel))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 34)
-                .padding(.horizontal, 24)
-                .herdieCard()
+                .padding(.vertical, 24)
             } else {
                 ForEach(model.connections) { connection in
                     ConnectionRow(
@@ -206,13 +159,29 @@ struct DashboardView: View {
                     )
                 }
             }
+        } header: {
+            HStack {
+                Text("Connections")
+                Spacer()
+                if !model.connections.isEmpty {
+                    Button("Manage") {
+                        showingConnectionManager = true
+                    }
+                    .textCase(nil)
+                }
+            }
+        } footer: {
+            if recentSession == nil && !model.connections.isEmpty {
+                Text("No recent session. Tap a connection to open Herdr.")
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+            }
         }
     }
 
     private var privacyFooter: some View {
         VStack(spacing: 2) {
             Label("Direct SSH · no Herdie account or relay", systemImage: "lock.shield")
-                .foregroundStyle(HerdieTheme.secondary)
+                .foregroundStyle(Color(uiColor: .secondaryLabel))
             Button {
                 showingMaker = true
             } label: {
@@ -232,14 +201,12 @@ struct DashboardView: View {
         Button {
             showingConnectionEditor = true
         } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(HerdieTheme.onAccent)
-                .frame(width: 72, height: 72)
-                .background(HerdieTheme.accent, in: Circle())
-                .shadow(color: HerdieTheme.accent.opacity(0.3), radius: 24)
+            HStack {
+                Image(systemName: "plus")
+                Text("Add connection")
+            }
         }
-        .accessibilityLabel("Add connection")
+        .font(.headline)
     }
 
     private func delete(_ connection: SavedConnection) {
@@ -258,47 +225,44 @@ private struct ConnectionRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
-            Button(action: onOpen) {
-                HStack(spacing: 16) {
-                    Image(systemName: "server.rack")
-                        .font(.title2)
-                        .foregroundStyle(HerdieTheme.secondary)
-                        .frame(width: 42)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(connection.name)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Text(connection.destination)
-                            .font(.system(.subheadline, design: .monospaced))
-                            .foregroundStyle(HerdieTheme.secondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                    Text("SSH")
-                        .font(.caption.bold())
-                        .foregroundStyle(.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.blue.opacity(0.15), in: Capsule())
+        Button(action: onOpen) {
+            HStack(spacing: 12) {
+                Image(systemName: "server.rack")
+                    .font(.title2)
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(connection.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(connection.destination)
+                        .font(.system(.footnote, design: .monospaced))
+                        .foregroundStyle(Color(uiColor: .secondaryLabel))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .accessibilityHidden(true)
             }
-            .buttonStyle(.plain)
-
-            Menu {
-                Button("Edit", systemImage: "pencil", action: onEdit)
-                Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.headline)
-                    .foregroundStyle(HerdieTheme.secondary)
-                    .frame(width: 36, height: 44)
-            }
-            .accessibilityLabel("Connection options")
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
-        .padding(18)
-        .herdieCard()
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens the terminal connection")
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
+            Button("Edit", systemImage: "pencil", action: onEdit)
+                .tint(.blue)
+        }
+        .contextMenu {
+            Button("Connect", systemImage: "terminal", action: onOpen)
+            Button("Edit", systemImage: "pencil", action: onEdit)
+            Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
+        }
+        .accessibilityAction(named: "Edit", onEdit)
+        .accessibilityAction(named: "Delete", onDelete)
     }
 }
 
@@ -315,7 +279,7 @@ private struct ConnectionManagerView: View {
                             Text(connection.name)
                             Text(connection.destination)
                                 .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(HerdieTheme.secondary)
+                                .foregroundStyle(Color(uiColor: .secondaryLabel))
                         }
                         Spacer()
                         Button(role: .destructive) {
@@ -385,7 +349,7 @@ private struct RecentSessionCard: View {
                     .frame(width: 8, height: 8)
                 Text(session.connection.name)
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(HerdieTheme.secondary)
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
                 Spacer()
                 Text("SSH")
                     .font(.caption.bold())
@@ -395,7 +359,7 @@ private struct RecentSessionCard: View {
             Divider().overlay(.white.opacity(0.08))
             Text(session.preview.isEmpty ? "Herdr is ready to reattach." : session.preview)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color(uiColor: .secondaryLabel))
                 .lineLimit(8)
                 .frame(maxWidth: .infinity, minHeight: 106, alignment: .topLeading)
                 .padding(12)
@@ -405,7 +369,7 @@ private struct RecentSessionCard: View {
                     .foregroundStyle(HerdieTheme.accent)
                 Spacer()
                 Text(session.lastUsed, style: .relative)
-                    .foregroundStyle(HerdieTheme.secondary)
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
             }
             .font(.caption)
             .padding(12)

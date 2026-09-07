@@ -53,19 +53,19 @@ final class HerdieUITests: XCTestCase {
         XCTAssertTrue(agents.waitForExistence(timeout: 3))
         XCTAssertFalse(app.keyboards.firstMatch.exists, "Opening a terminal should not load the keyboard until requested")
         XCTAssertGreaterThanOrEqual(agents.frame.width, 44)
-        XCTAssertEqual(agents.frame.height, 44, accuracy: 1)
+        XCTAssertGreaterThanOrEqual(agents.frame.height, 44)
         XCTAssertEqual(agents.frame.midY, app.buttons["Show keyboard"].frame.midY, accuracy: 1)
         let dock = XCTAttachment(screenshot: app.screenshot())
         dock.name = "Compact terminal dock"
         dock.lifetime = .keepAlways
         add(dock)
+        app.buttons["Session actions"].tap()
         app.buttons["Read terminal output"].tap()
         XCTAssertTrue(app.navigationBars["Read output"].waitForExistence(timeout: 3))
         app.buttons["Back to live"].tap()
         app.buttons["Write a message"].tap()
         let draft = app.textViews["Message draft"]
         XCTAssertTrue(draft.waitForExistence(timeout: 3))
-        draft.tap()
         draft.typeText("Review this change")
         app.buttons["Keep draft"].tap()
         app.buttons["Write a message"].tap()
@@ -74,6 +74,96 @@ final class HerdieUITests: XCTestCase {
         screenshot.name = "Phone writing sheet"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+    }
+
+    func testTerminalFocusModeRestoresControls() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage", "--seed-demo"]
+        app.launch()
+        app.staticTexts["Mac Studio"].tap()
+        let connected = NSPredicate(format: "enabled == true AND hittable == true")
+        expectation(for: connected, evaluatedWith: app.buttons["Running agents"])
+        waitForExpectations(timeout: 15)
+        app.buttons["Session actions"].tap()
+        XCTAssertTrue(app.buttons["Hide controls"].waitForExistence(timeout: 15))
+        app.buttons["Hide controls"].tap()
+        XCTAssertTrue(app.buttons["Show controls"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["Write a message"].exists)
+        app.buttons["Show controls"].tap()
+        XCTAssertTrue(app.buttons["Write a message"].waitForExistence(timeout: 15))
+        app.buttons["Show keyboard"].tap()
+        XCTAssertTrue(app.buttons["terminal-hide-keyboard"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["Write a message"].exists)
+        app.buttons["terminal-hide-keyboard"].tap()
+        XCTAssertTrue(app.buttons["Write a message"].waitForExistence(timeout: 15))
+    }
+
+    func testFloatingDockCollapsesWhileBrowsingOutput() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage", "--seed-demo"]
+        app.launch()
+        app.staticTexts["Mac Studio"].tap()
+        let agents = app.buttons["Running agents"]
+        XCTAssertTrue(agents.waitForExistence(timeout: 10))
+        let expandedWidth = agents.frame.width
+        let expanded = XCTAttachment(screenshot: app.screenshot())
+        expanded.name = "Floating dock - expanded"
+        expanded.lifetime = .keepAlways
+        add(expanded)
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+        start.press(forDuration: 0.05, thenDragTo: end)
+        XCTAssertLessThan(agents.frame.width, expandedWidth)
+        XCTAssertGreaterThanOrEqual(agents.frame.height, 44)
+        let collapsed = XCTAttachment(screenshot: app.screenshot())
+        collapsed.name = "Floating dock - collapsed"
+        collapsed.lifetime = .keepAlways
+        add(collapsed)
+        end.press(forDuration: 0.05, thenDragTo: start)
+        XCTAssertEqual(agents.frame.width, expandedWidth, accuracy: 1)
+        app.buttons["Write a message"].tap()
+        XCTAssertTrue(app.textViews["Message draft"].waitForExistence(timeout: 5))
+    }
+
+    func testKeyboardAppearanceInLightAndDarkModes() {
+        let app = XCUIApplication()
+        for mode in ["Light", "Dark"] {
+            app.launchArguments = ["--ui-testing", "--reset-storage", "--seed-demo"]
+            app.launch()
+            app.buttons["Settings"].tap()
+            app.buttons[mode].tap()
+            app.buttons["Done"].tap()
+            app.staticTexts["Mac Studio"].tap()
+            expectation(for: NSPredicate(format: "enabled == true AND hittable == true"), evaluatedWith: app.buttons["Show keyboard"])
+            waitForExpectations(timeout: 15)
+            app.buttons["Show keyboard"].tap()
+            // Fresh simulators can show the system QuickPath introduction.
+            if app.buttons["Continue"].waitForExistence(timeout: 2) { app.buttons["Continue"].tap() }
+            XCTAssertTrue(app.buttons["terminal-hide-keyboard"].waitForExistence(timeout: 15))
+            XCTAssertTrue(app.buttons["terminal-key-control"].exists)
+            app.buttons["terminal-key-control"].tap()
+            XCTAssertEqual(app.buttons["terminal-key-control"].value as? String, "On")
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "Native keyboard - \(mode)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            app.buttons["terminal-hide-keyboard"].tap()
+            XCTAssertTrue(app.buttons["Write a message"].waitForExistence(timeout: 15))
+            app.terminate()
+        }
+    }
+
+    func testLoadingResolvesIntoAttachedTerminal() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-storage", "--seed-demo", "--slow-connection"]
+        app.launch()
+        app.staticTexts["Mac Studio"].tap()
+        XCTAssertTrue(app.staticTexts["Connecting to Mac Studio…"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Running agents"].waitForExistence(timeout: 5))
+        let attached = NSPredicate(format: "enabled == true")
+        expectation(for: attached, evaluatedWith: app.buttons["Running agents"])
+        waitForExpectations(timeout: 6)
+        XCTAssertFalse(app.staticTexts["Connecting to Mac Studio…"].exists)
     }
 
     func testConnectionCreationFlowIsReachable() {
@@ -154,6 +244,11 @@ final class HerdieUITests: XCTestCase {
             NSPredicate(format: "label CONTAINS %@", "The host name could not be resolved.")
         ).firstMatch
         XCTAssertTrue(resolutionMessage.exists)
+        XCTAssertTrue(app.buttons["retry-connection"].exists)
+        app.buttons["connection-help"].tap()
+        XCTAssertTrue(app.navigationBars["Connection help"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Open Herdie Settings"].exists)
+        app.buttons["Done"].tap()
         XCTAssertTrue(app.buttons["retry-connection"].exists)
 
         let attachment = XCTAttachment(screenshot: app.screenshot())

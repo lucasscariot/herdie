@@ -3,6 +3,7 @@ import UIKit
 
 struct TerminalScreen: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
     let environment: AppEnvironment
@@ -15,8 +16,17 @@ struct TerminalScreen: View {
     @State private var hasEnded = false
     @State private var showingReader = false
     @State private var readingSnapshot = ""
+    @State private var readingURLs: Set<URL> = []
     @State private var showingWriting = false
     @State private var keyboardVisible = false
+    @State private var focusMode = false
+    @State private var dockCollapsed = false
+    private var showsDock: Bool { !focusMode && (!keyboardVisible || showingWriting) }
+    @State private var loadingVisible = false
+    @State private var showingDetails = false
+    @State private var submissionFeedback = 0
+    private var terminalBackground: Color { Color(uiColor: environment.preferences.terminalTheme.background) }
+    @State private var showingTerminalAppearance = false
 
     init(
         connection: SavedConnection,
@@ -34,44 +44,75 @@ struct TerminalScreen: View {
     }
 
     var body: some View {
-        ZStack {
-            HerdieTheme.background.ignoresSafeArea()
-            VStack(spacing: 0) {
-                terminalHeader
-                ZStack {
-                    LiveTerminalCanvas(
-                        model: model,
-                        onResize: handleResize,
-                        onPaste: paste
-                    )
-                    .accessibilityIdentifier("terminal-canvas")
+        NavigationStack {
+            LiveTerminalCanvas(model: model, preferences: environment.preferences, bottomClearance: showsDock ? 76 : 0, onScrollDirection: { rows in
+                if rows != 0 { dockCollapsed = rows > 0 }
+            }, onResize: handleResize, onPaste: paste, onFocusChanged: { keyboardVisible = $0 })
+                .padding(.horizontal, 12)
+                .accessibilityIdentifier("terminal-canvas")
+                .opacity(model.hasAttached || !loadingVisible ? 1 : 0)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: model.hasAttached)
+                .overlay(alignment: model.hasAttached ? .top : .center) {
                     if showsConnectionRecovery {
-                        ConnectionRecoveryCard(
-                            destination: model.connection.destination,
-                            message: model.connectionRecoveryMessage,
-                            isRetrying: model.state == .reconnecting,
-                            onRetry: model.retry,
-                            onClose: closeTerminal
-                        )
-                        .padding(24)
+                        ScrollView {
+                            connectionOverlay
+                                .frame(maxWidth: .infinity)
+                                .padding(20)
+                        }
+                        .defaultScrollAnchor(model.hasAttached ? .top : .center)
+                    } else {
+                        connectionOverlay.padding(20)
                     }
                 }
-                if model.showingComposer || environment.preferences.composerMode {
-                    ComposerBar(
-                        model: model,
-                        autoSend: environment.preferences.autoSend
-                    )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                .overlay(alignment: .topTrailing) {
+                    if focusMode {
+                        Button("Show controls", systemImage: "arrow.down.right.and.arrow.up.left") {
+                            focusMode = false
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .herdieGlass()
+                        .padding(12)
+                    }
                 }
-                if keyboardVisible {
-                    TerminalToolbar(
-                        model: model,
-                        actions: environment.preferences.toolbarActions,
-                        onPaste: paste
-                    )
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if !focusMode {
+                        VStack(spacing: 0) {
+                            if !showingWriting && (model.showingComposer || environment.preferences.composerMode) {
+                                ComposerBar(model: model, autoSend: environment.preferences.autoSend)
+                            }
+
+                        }
+                    }
                 }
-                navigationDock
-            }
+                .overlay(alignment: .bottom) {
+                    if showsDock { navigationDock.padding(.bottom, 8) }
+                }
+                .background(terminalBackground)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Close terminal", systemImage: "chevron.left", action: closeTerminal)
+                    }
+                    ToolbarItem(placement: .principal) { terminalHeader }
+                    ToolbarItem(placement: .topBarTrailing) { sessionMenu }
+                }
+                .toolbar(focusMode ? .hidden : .visible, for: .navigationBar)
+                .toolbarBackground(terminalBackground, for: .navigationBar)
+                .toolbarBackground(.visible, for: .navigationBar)
+                .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(environment.preferences.appearance.colorScheme)
+        .tint(HerdieTheme.accent)
+        .background(terminalBackground.ignoresSafeArea())
+        .sensoryFeedback(.selection, trigger: submissionFeedback)
+        .sensoryFeedback(.selection, trigger: model.controlArmed) { _, armed in armed }
+        .task(id: model.isRecovering) {
+            loadingVisible = false
+            guard model.isRecovering else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+                loadingVisible = true
+            } catch { }
         }
         .task {
             while !Task.isCancelled {
@@ -90,12 +131,6 @@ struct TerminalScreen: View {
                 break
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            keyboardVisible = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardVisible = false
-        }
         .sheet(isPresented: $showingWorkspaces) {
             WorkspaceSheet(model: model)
                 .presentationDetents([.medium])
@@ -108,13 +143,7 @@ struct TerminalScreen: View {
         }
         .sheet(isPresented: $showingReader) {
             NavigationStack {
-                ScrollView {
-                    Text(readingSnapshot.isEmpty ? "No terminal output yet." : readingSnapshot)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                }
+                TerminalOutputReader(text: readingSnapshot.isEmpty ? "No terminal output yet." : readingSnapshot, allowedURLs: readingURLs)
                 .navigationTitle("Read output")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -125,25 +154,43 @@ struct TerminalScreen: View {
             }
         }
         .sheet(isPresented: $showingWriting) {
+            TerminalWritingSheet(model: model) {
+                submissionFeedback += 1
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingTerminalAppearance) {
             NavigationStack {
-                TextEditor(text: $model.composerDraft)
-                    .padding()
-                    .accessibilityLabel("Message draft")
-                    .navigationTitle("Write a message")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Keep draft") { showingWriting = false }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Send") {
-                                model.sendComposer()
-                                showingWriting = false
-                            }
-                            .disabled(model.composerDraft.isEmpty || model.state != .attached)
+                TerminalAppearanceSettingsView(preferences: environment.preferences)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { showingTerminalAppearance = false }
+                    } }
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingDetails) {
+            NavigationStack {
+                List {
+                    Section("Connection") {
+                        LabeledContent("Host", value: model.connection.host)
+                        LabeledContent("User", value: model.connection.username)
+                        LabeledContent("Status", value: stateLabel)
+                    }
+                    if let details = model.errorMessage {
+                        Section("Technical details") {
+                            Text(details).font(.system(.footnote, design: .monospaced)).textSelection(.enabled)
                         }
                     }
+                }
+                .navigationTitle("Connection details")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showingDetails = false }
+                } }
             }
+            .presentationDragIndicator(.visible)
         }
         .alert("Verify SSH Host", isPresented: Binding(
             get: { model.pendingHostKey != nil },
@@ -171,6 +218,8 @@ struct TerminalScreen: View {
                 model.pendingHostKey == nil
                     && model.errorMessage != nil
                     && !showsConnectionRecovery
+                    && !model.isRecovering
+                    && !showingWriting
             },
             set: { if !$0 { model.errorMessage = nil } }
         )) {
@@ -184,91 +233,126 @@ struct TerminalScreen: View {
     }
 
     private var terminalHeader: some View {
-        HStack(spacing: 12) {
-            Button {
-                finishSessionIfNeeded()
-                dismiss()
-            } label: {
-                Image(systemName: "minus")
-                    .font(.headline)
-                    .foregroundStyle(HerdieTheme.onAccent)
-                    .frame(width: 34, height: 34)
-                    .background(statusColor, in: Circle())
+        Button {
+            dismissKeyboard()
+            showingWorkspaces = true
+        } label: {
+            VStack(spacing: 2) {
+                HStack(spacing: 5) {
+                    Text(model.connection.name).font(.headline).lineLimit(1)
+                    Image(systemName: "chevron.down").font(.caption2.bold())
+                }
+                Text(stateLabel).font(.caption).foregroundStyle(.secondary)
             }
-            .accessibilityLabel("Close terminal")
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(model.connection.name)
-                    .font(.system(.subheadline, design: .monospaced))
-                    .lineLimit(1)
-                Text(stateLabel)
-                    .font(.caption2)
-                    .foregroundStyle(HerdieTheme.secondary)
-            }
-            Spacer()
-            Button {
-                showingWorkspaces = true
-            } label: {
-                Label("Workspaces", systemImage: "rectangle.3.group")
-                    .labelStyle(.iconOnly)
-                    .font(.title3)
-                    .frame(width: 38, height: 34)
-            }
-            .accessibilityLabel("Herdr workspaces")
-            Text("SSH")
-                .font(.caption.bold())
-                .foregroundStyle(HerdieTheme.blue)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(HerdieTheme.blue.opacity(0.12), in: Capsule())
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
+        .foregroundStyle(.primary)
+        .accessibilityLabel("Herdr workspaces")
+        .accessibilityValue("\(model.connection.name), \(stateLabel)")
+    }
+
+    private var sessionMenu: some View {
+        Menu("Session actions", systemImage: "ellipsis") {
+            Button("Read terminal output", systemImage: "doc.text.magnifyingglass") {
+                dismissKeyboard()
+                readingSnapshot = model.frame.text
+                readingURLs = Set(TerminalLinkDetector.links(in: model.frame).map(\.url))
+                showingReader = true
+            }
+            Button("Toggle full-screen pane", systemImage: "arrow.up.left.and.arrow.down.right") {
+                model.togglePaneFocus()
+            }
+            .disabled(model.state != .attached)
+            Button("Hide controls", systemImage: "viewfinder") {
+                dismissKeyboard()
+                focusMode = true
+            }
+            Divider()
+            Button("Terminal appearance", systemImage: "textformat.size") {
+                dismissKeyboard()
+                showingTerminalAppearance = true
+            }
+            Button("Connection details", systemImage: "info.circle") { showingDetails = true }
+        }
     }
 
     private var navigationDock: some View {
-        HStack(spacing: 0) {
-            dockButton("Running agents", symbol: "person.2") {
+        HStack(spacing: 8) {
+            dockButton("Running agents", title: "Agents", symbol: "person.2") {
                 dismissKeyboard()
                 showingAgents = true
             }
             .disabled(model.state != .attached)
-            dockButton("Toggle full-screen pane", symbol: "arrow.up.left.and.arrow.down.right") {
-                dismissKeyboard()
-                model.togglePaneFocus()
-            }
-            .disabled(model.state != .attached)
-            dockButton("Read terminal output", symbol: "doc.text.magnifyingglass") {
-                dismissKeyboard()
-                readingSnapshot = model.frame.text
-                showingReader = true
-            }
-            dockButton("Write a message", symbol: "square.and.pencil") {
+            dockButton("Write a message", title: "Write", symbol: "square.and.pencil") {
                 dismissKeyboard()
                 showingWriting = true
             }
-            dockButton("Show keyboard", symbol: "keyboard") {
+            dockButton("Show keyboard", title: "Keyboard", symbol: "keyboard") {
                 model.perform(.keyboard)
             }
+            .disabled(model.state != .attached)
         }
-        .frame(height: 44)
-        .padding(.horizontal, 8)
-        .background(.ultraThinMaterial)
-        .accessibilityIdentifier("terminal-navigation-dock")
+        .padding(6)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay { Capsule().strokeBorder(.primary.opacity(0.08), lineWidth: 0.5) }
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        .padding(.horizontal, 20)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.24), value: dockCollapsed)
     }
 
-    private func dockButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func dockButton(_ label: String, title: String, symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 19, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .contentShape(Rectangle())
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                if !dockCollapsed { Text(title).transition(.opacity) }
+            }
+            .font(.subheadline.weight(.medium))
+            .frame(minWidth: 44, minHeight: 44)
+            .padding(.horizontal, dockCollapsed ? 0 : 8)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .tint(HerdieTheme.accent)
-        .accessibilityLabel(title)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier(label)
+    }
+
+    @ViewBuilder
+    private var connectionOverlay: some View {
+        if model.pendingHostKey == nil {
+            if model.isRecovering {
+                if loadingVisible {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(model.hasAttached ? "Reconnecting…" : "Connecting to \(model.connection.name)…")
+                                .font(.subheadline.weight(.medium))
+                            if model.hasAttached {
+                                Text("Last output remains available.").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .padding(18)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+                    .accessibilityElement(children: .combine)
+                }
+            } else if showsConnectionRecovery {
+                ConnectionRecoveryCard(
+                    destination: model.connection.destination,
+                    message: model.connectionRecoveryMessage,
+                    technicalDetails: model.errorMessage,
+                    mayHaveNetworkRestriction: model.mayHaveNetworkRestriction,
+                    isRetrying: model.hasAttached,
+                    onRetry: model.retry,
+                    onClose: closeTerminal
+                )
+            } else if model.state == .idle {
+                VStack(spacing: 12) {
+                    Label("Session closed", systemImage: "terminal").font(.headline)
+                    Button("Reconnect", action: model.retry).buttonStyle(.borderedProminent)
+                }
+                .padding(20)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+            }
+        }
     }
 
     private func dismissKeyboard() {
@@ -276,25 +360,17 @@ struct TerminalScreen: View {
     }
 
     private var stateLabel: String {
-        switch model.state {
+        if model.isRecovering { return model.hasAttached ? "Reconnecting…" : "Connecting…" }
+        return switch model.state {
         case .idle: "Disconnected"
         case .connecting: "Connecting…"
         case .attached: "Herdr attached"
-        case .reconnecting: "Ready to reattach"
-        }
-    }
-
-    private var statusColor: Color {
-        switch model.state {
-        case .idle: HerdieTheme.secondary
-        case .connecting: .yellow
-        case .attached: HerdieTheme.accent
-        case .reconnecting: .orange
+        case .reconnecting: "Connection interrupted"
         }
     }
 
     private var showsConnectionRecovery: Bool {
-        guard model.pendingHostKey == nil, model.errorMessage != nil else { return false }
+        guard model.pendingHostKey == nil, !model.isRecovering, model.errorMessage != nil else { return false }
         return model.state == .idle || model.state == .reconnecting
     }
 
@@ -329,18 +405,36 @@ struct TerminalScreen: View {
 /// Observe high-frequency frame changes here, not in the surrounding screen.
 private struct LiveTerminalCanvas: View {
     let model: TerminalViewModel
+    let preferences: AppPreferences
+    let bottomClearance: CGFloat
+    let onScrollDirection: (Int) -> Void
     let onResize: (UInt16, UInt16) -> Void
     let onPaste: () -> Void
+    let onFocusChanged: (Bool) -> Void
 
     var body: some View {
         TerminalCanvas(
             terminalFrame: model.frame,
+            theme: preferences.terminalTheme,
+            fontSize: CGFloat(preferences.terminalFontSize),
+            bottomClearance: bottomClearance,
+            toolbarActions: preferences.toolbarActions.filter { $0 != .keyboard && $0 != .composer },
+            controlArmed: model.controlArmed,
+            onToolbarAction: model.perform,
             focusGeneration: model.keyboardGeneration,
             onInput: model.sendInput,
             onResize: onResize,
-            onScroll: model.scroll,
-            onSwitchPane: model.switchPane,
-            onPaste: onPaste
+            onScroll: { rows in
+                onScrollDirection(rows)
+                model.scroll(by: rows)
+            },
+            onSwitchPane: { forward in
+                guard model.state == .attached else { return }
+                model.switchPane(forward: forward)
+                UISelectionFeedbackGenerator().selectionChanged()
+            },
+            onPaste: onPaste,
+            onFocusChanged: onFocusChanged
         )
     }
 }
@@ -348,9 +442,12 @@ private struct LiveTerminalCanvas: View {
 private struct ConnectionRecoveryCard: View {
     let destination: String
     let message: String
+    let technicalDetails: String?
+    let mayHaveNetworkRestriction: Bool
     let isRetrying: Bool
     let onRetry: () -> Void
     let onClose: () -> Void
+    @State private var showingSetup = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -369,23 +466,150 @@ private struct ConnectionRecoveryCard: View {
                     .multilineTextAlignment(.center)
                     .textSelection(.enabled)
             }
-            Button("Try Again", action: onRetry)
-                .font(.headline)
-                .foregroundStyle(HerdieTheme.onAccent)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(HerdieTheme.accent, in: Capsule())
+            Button(action: onRetry) {
+                Text("Try Again").frame(maxWidth: .infinity)
+            }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .accessibilityIdentifier("retry-connection")
-            Button("Close", action: onClose)
-                .font(.subheadline)
+            HStack {
+                Button("Connection help") { showingSetup = true }
+                    .accessibilityIdentifier("connection-help")
+                Spacer()
+                Button("Close", action: onClose)
+            }
+            .font(.subheadline)
+            .frame(minHeight: 44)
         }
         .padding(22)
         .frame(maxWidth: 420)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(.white.opacity(0.08))
+        .herdieCard(cornerRadius: 24)
+        .sheet(isPresented: $showingSetup) {
+            ConnectionSetupHelp(
+                mayHaveNetworkRestriction: mayHaveNetworkRestriction,
+                technicalDetails: technicalDetails
+            )
         }
+    }
+}
+
+private struct ConnectionSetupHelp: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    let mayHaveNetworkRestriction: Bool
+    let technicalDetails: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if mayHaveNetworkRestriction {
+                    Section("Check this device first") {
+                        Text("The system denied this connection. A device permission or VPN restriction may be responsible.")
+                    }
+                }
+                Section("1. Allow local connections") {
+                    Text("In Settings → Privacy & Security → Local Network, enable Herdie if it appears. Each iPhone and iPad has its own permission.")
+                    Button("Open Herdie Settings", systemImage: "gear") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                    Text("If there is no Local Network switch, return to Herdie, try connecting while the app is open, and allow the prompt if shown.")
+                        .font(.footnote)
+                        .foregroundStyle(HerdieTheme.secondary)
+                }
+                Section("2. Check Tailscale, if you use it") {
+                    Text("Open Tailscale on this device. Confirm it is connected to the same network as your host and that the host is online.")
+                    Text("Try pinging the host from Tailscale. If that fails, check the VPN connection and your tailnet access rules before retrying Herdie.")
+                }
+                Section("3. Check the SSH host") {
+                    Text("On your Mac, open System Settings → General → Sharing and enable Remote Login for your user.")
+                    Text("Check the saved host address, SSH port, and username. For Tailscale, use the host’s Tailscale IP or full MagicDNS name.")
+                    Text("If the host is reachable but SSH still fails, check the host firewall and the saved password or private key.")
+                }
+                if let technicalDetails {
+                    Section {
+                        DisclosureGroup("Technical details") {
+                            Text(technicalDetails)
+                                .font(.system(.footnote, design: .monospaced))
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Connection help")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct TerminalWritingSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var model: TerminalViewModel
+    let onSubmitted: () -> Void
+    @FocusState private var editorFocused: Bool
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Label(model.connection.name, systemImage: "terminal")
+                    .font(.subheadline.weight(.medium))
+                Text("Send to the active terminal pane. Return adds a new line here.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                if model.composerDraft.isEmpty, let lastDraft = model.lastSubmittedDraft {
+                    Button("Restore last message", systemImage: "arrow.uturn.backward") {
+                        model.composerDraft = lastDraft
+                    }
+                    .font(.footnote)
+                }
+                if model.state != .attached {
+                    Label("Reconnect to send. Your draft is kept here.", systemImage: "wifi.exclamationmark")
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
+                }
+                TextEditor(text: $model.composerDraft)
+                    .font(.body)
+                    .scrollContentBackground(.hidden)
+                    .focused($editorFocused)
+                    .accessibilityLabel("Message draft")
+                    .overlay(alignment: .topLeading) {
+                        if model.composerDraft.isEmpty {
+                            Text("Write a message…")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 8)
+                                .padding(.leading, 5)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                if let error = model.errorMessage, model.state == .attached {
+                    Text(error).font(.footnote).foregroundStyle(.red).textSelection(.enabled)
+                }
+            }
+            .padding(20)
+            .navigationTitle("Write a message")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Keep draft") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Send", systemImage: "arrow.up") {
+                        if model.sendComposer() {
+                            onSubmitted()
+                            dismiss()
+                        }
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .disabled(model.composerDraft.isEmpty || model.state != .attached)
+                }
+            }
+        }
+        .task { editorFocused = true }
     }
 }
 
@@ -414,7 +638,7 @@ private struct ComposerBar: View {
                     .frame(width: 42, height: 42)
                     .background(HerdieTheme.accent, in: Circle())
             }
-            .disabled(model.composerDraft.isEmpty)
+            .disabled(model.composerDraft.isEmpty || model.state != .attached)
             .accessibilityLabel("Send")
         }
         .padding(.horizontal, 12)
@@ -423,51 +647,30 @@ private struct ComposerBar: View {
     }
 }
 
-private struct TerminalToolbar: View {
-    let model: TerminalViewModel
-    let actions: [ToolbarAction]
-    let onPaste: () -> Void
+private struct TerminalOutputReader: UIViewRepresentable {
+    let text: String
+    let allowedURLs: Set<URL>
 
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(actions) { action in
-                    Button {
-                        if action == .paste {
-                            onPaste()
-                        } else {
-                            model.perform(action)
-                        }
-                    } label: {
-                        Group {
-                            if let symbol = action.systemImage {
-                                Image(systemName: symbol)
-                            } else {
-                                Text(action.title)
-                                    .font(.system(.subheadline, design: .monospaced).weight(.medium))
-                            }
-                        }
-                        .frame(minWidth: 42, minHeight: 42)
-                        .padding(.horizontal, action.systemImage == nil ? 5 : 0)
-                        .foregroundStyle(action == .control && model.controlArmed ? HerdieTheme.onAccent : Color.primary)
-                        .background(
-                            action == .control && model.controlArmed
-                                ? HerdieTheme.accent
-                                : HerdieTheme.raisedSurface,
-                            in: RoundedRectangle(cornerRadius: 14)
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(HerdieTheme.border, lineWidth: 0.5)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(action.title)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 9)
+    func makeUIView(context: Context) -> UITextView {
+        let view = UITextView()
+        view.isEditable = false
+        view.isSelectable = true
+        view.backgroundColor = .clear
+        view.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        view.adjustsFontForContentSizeCategory = true
+        view.linkTextAttributes = [.foregroundColor: UIColor(HerdieTheme.accent), .underlineStyle: NSUnderlineStyle.single.rawValue]
+        return view
+    }
+
+    func updateUIView(_ view: UITextView, context: Context) {
+        guard view.text != text else { return }
+        let content = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular),
+            .foregroundColor: UIColor.label
+        ])
+        for match in TerminalLinkDetector.matches(in: text) where allowedURLs.contains(match.url) {
+            content.addAttribute(.link, value: match.url, range: match.range)
         }
-        .background(.ultraThinMaterial)
+        view.attributedText = content
     }
 }

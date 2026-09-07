@@ -56,11 +56,23 @@ final class TerminalViewModel {
     var pendingHostKey: PendingHostKey?
     var errorMessage: String?
     var composerDraft = ""
+    private(set) var lastSubmittedDraft: String?
     var showingComposer = false
     var keyboardGeneration = 0
+    private(set) var isConnectionPending = false
+    private(set) var hasAttached = false
+    var isRecovering: Bool { isConnectionPending || reconnectScheduled }
+
+    var mayHaveNetworkRestriction: Bool {
+        let message = errorMessage?.lowercased() ?? ""
+        return message.contains("operation not permitted") || message.contains("os error 1)")
+    }
 
     var connectionRecoveryMessage: String {
         guard let errorMessage else { return "The SSH session is unavailable." }
+        if mayHaveNetworkRestriction {
+            return "This device blocked the connection. Check Herdie’s Local Network permission and your VPN connection. This is not a confirmed password error."
+        }
         let normalized = errorMessage.lowercased()
         let nameResolutionMarkers = [
             "failed to lookup address information",
@@ -71,13 +83,9 @@ final class TerminalViewModel {
             "no such host"
         ]
         guard nameResolutionMarkers.contains(where: normalized.contains) else {
-            return errorMessage
+            return "The session is unavailable. Try again or open connection help for details."
         }
-        return """
-        The host name could not be resolved. Use an IP address, a working .local name, or the full Tailscale MagicDNS name.
-
-        \(errorMessage)
-        """
+        return "The host name could not be resolved. Check the address or try the host’s IP address."
     }
 
     private let repository: ConnectionRepository
@@ -122,13 +130,19 @@ final class TerminalViewModel {
         lastColumns = max(columns, 1)
         lastRows = max(rows, 1)
         let authentication = try loadAuthentication()
-        try session.connect(SessionConnectRequest(
-            connection: connection,
-            authentication: authentication,
-            expectedHostKey: connection.hostKeyFingerprint,
-            columns: lastColumns,
-            rows: lastRows
-        ))
+        isConnectionPending = true
+        do {
+            try session.connect(SessionConnectRequest(
+                connection: connection,
+                authentication: authentication,
+                expectedHostKey: connection.hostKeyFingerprint,
+                columns: lastColumns,
+                rows: lastRows
+            ))
+        } catch {
+            isConnectionPending = false
+            throw error
+        }
         lastSentColumns = lastColumns
         lastSentRows = lastRows
     }
@@ -167,6 +181,7 @@ final class TerminalViewModel {
     func rejectPendingHostKey() {
         resetReconnectPolicy()
         pendingHostKey = nil
+        isConnectionPending = false
         session.disconnect(.userRequested)
         state = .idle
     }
@@ -194,17 +209,23 @@ final class TerminalViewModel {
         }
     }
 
-    func sendComposer() {
-        guard state == .attached, !composerDraft.isEmpty else { return }
-        sendText(composerDraft + "\n")
+    @discardableResult
+    func sendComposer() -> Bool {
+        guard state == .attached, !composerDraft.isEmpty else { return false }
+        guard send(Data((composerDraft + "\n").utf8)) else { return false }
+        controlArmed = false
+        lastSubmittedDraft = composerDraft
         composerDraft = ""
+        return true
     }
 
     func autoSendComposerIfNeeded(isEnabled: Bool) {
         guard state == .attached, isEnabled, composerDraft.hasSuffix("\n") else { return }
-        let completedText = composerDraft
-        composerDraft = ""
-        sendText(completedText)
+        if send(Data(composerDraft.utf8)) {
+            lastSubmittedDraft = composerDraft
+            controlArmed = false
+            composerDraft = ""
+        }
     }
 
     func paste(_ value: String) {
@@ -287,6 +308,7 @@ final class TerminalViewModel {
         guard !wasSuspended else { return }
         resetReconnectPolicy()
         wasSuspended = true
+        isConnectionPending = false
         session.disconnect(.appSuspended)
         state = .reconnecting
     }
@@ -300,6 +322,7 @@ final class TerminalViewModel {
     }
 
     func disconnect() {
+        isConnectionPending = false
         resetReconnectPolicy()
         session.disconnect(.userRequested)
         state = .idle
@@ -316,8 +339,11 @@ final class TerminalViewModel {
         switch event {
         case let .stateChanged(newState):
             state = newState
+            if newState != .attached { isLoadingAgents = false }
+            isConnectionPending = newState == .connecting
             switch newState {
             case .attached:
+                hasAttached = true
                 errorMessage = nil
                 applyPendingResize()
                 scheduleReconnectBudgetReset()
@@ -346,6 +372,10 @@ final class TerminalViewModel {
             self.agents = agents
             isLoadingAgents = false
         case let .error(message):
+            if isConnectionPending {
+                isConnectionPending = false
+                if state == .connecting { state = .idle }
+            }
             isLoadingAgents = false
             errorMessage = message
         }
@@ -368,12 +398,15 @@ final class TerminalViewModel {
         }
     }
 
-    private func send(_ data: Data) {
-        guard state == .attached else { return }
+    @discardableResult
+    private func send(_ data: Data) -> Bool {
+        guard state == .attached else { return false }
         do {
             try session.send(data)
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 

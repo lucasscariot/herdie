@@ -27,6 +27,8 @@ final class AppPreferences {
         defaults.set(true, forKey: "herdie.maker.dismissed")
     }
     var appearance: AppAppearance { didSet { save() } }
+    var terminalTheme: TerminalTheme { didSet { save() } }
+    var terminalFontSize: Double { didSet { save() } }
     var composerMode: Bool { didSet { save() } }
     var autoSend: Bool { didSet { save() } }
     var toolbarActions: [ToolbarAction] { didSet { save() } }
@@ -46,11 +48,15 @@ final class AppPreferences {
         {
             composerMode = stored.composerMode
             appearance = stored.appearance ?? .system
+            terminalTheme = stored.terminalTheme ?? .herdie
+            terminalFontSize = min(max(stored.terminalFontSize ?? 14, 11), 20)
             autoSend = stored.autoSend
             toolbarActions = stored.toolbarActions.isEmpty ? ToolbarAction.defaults : stored.toolbarActions
         } else {
             composerMode = false
             appearance = .system
+            terminalTheme = .herdie
+            terminalFontSize = 14
             autoSend = false
             toolbarActions = ToolbarAction.defaults
         }
@@ -67,7 +73,9 @@ final class AppPreferences {
             composerMode: composerMode,
             autoSend: autoSend,
             toolbarActions: toolbarActions,
-            appearance: appearance
+            appearance: appearance,
+            terminalTheme: terminalTheme,
+            terminalFontSize: terminalFontSize
         )
         if let data = try? JSONEncoder().encode(stored) {
             defaults.set(data, forKey: key)
@@ -79,5 +87,7 @@ final class AppPreferences {
         var autoSend: Bool
         var toolbarActions: [ToolbarAction]
         var appearance: AppAppearance?
+        var terminalTheme: TerminalTheme?
+        var terminalFontSize: Double?
     }
 }

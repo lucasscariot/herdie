@@ -17,6 +17,12 @@ struct SettingsView: View {
                 }
                 Section("Terminal") {
                     NavigationLink {
+                        TerminalAppearanceSettingsView(preferences: preferences)
+                    } label: {
+                        SettingsRow(title: "Terminal appearance", subtitle: "Colours and SF Mono typography", symbol: "textformat.size")
+                    }
+                    .accessibilityLabel("Terminal appearance")
+                    NavigationLink {
                         ComposerSettingsView(preferences: preferences)
                     } label: {
                         SettingsRow(
@@ -379,5 +385,59 @@ struct AboutView: View {
             .contentShape(Rectangle())
         }
         .accessibilityHint("Opens in your browser")
+    }
+}
+
+
+struct TerminalAppearanceSettingsView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Bindable var preferences: AppPreferences
+
+    var body: some View {
+        Form {
+            Section("Appearance") {
+                Picker("Mode", selection: $preferences.appearance) {
+                    ForEach(AppAppearance.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+            }
+            Section {
+                Picker("Terminal theme", selection: $preferences.terminalTheme) {
+                    ForEach(TerminalTheme.allCases) { theme in
+                        Text(theme.title).tag(theme)
+                    }
+                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text("Herdie unifies dark panels and softens the standard terminal palette. Remote colours keeps the colours provided by your terminal apps.")
+            }
+            Section("Typography") {
+                LabeledContent("Font", value: "SF Mono")
+                Stepper(value: $preferences.terminalFontSize, in: 11...20, step: 1) {
+                    LabeledContent("Text size", value: "\(Int(preferences.terminalFontSize)) pt")
+                }
+                .accessibilityLabel("Terminal text size")
+                Text("Follows your iOS text size. Changing the size adjusts the terminal’s columns and rows.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Preview") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("~/projects/herdie")
+                        .foregroundStyle(Color(uiColor: preferences.terminalTheme.resolve(.indexed(index: 8), style: colorScheme == .dark ? .dark : .light)))
+                    Text("› Build something thoughtful")
+                    Text("✓ Ready when you are")
+                        .foregroundStyle(Color(uiColor: preferences.terminalTheme.resolve(.indexed(index: 2), style: colorScheme == .dark ? .dark : .light)))
+                }
+                .font(Font(UIFontMetrics(forTextStyle: .caption1).scaledFont(for:
+                    UIFont.monospacedSystemFont(ofSize: CGFloat(preferences.terminalFontSize), weight: .regular))))
+                .foregroundStyle(Color(uiColor: preferences.terminalTheme.foreground))
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .listRowBackground(Color(uiColor: preferences.terminalTheme.background))
+            }
+        }
+        .navigationTitle("Terminal appearance")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

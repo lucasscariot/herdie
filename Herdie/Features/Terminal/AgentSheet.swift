@@ -26,8 +26,8 @@ struct AgentSheet: View {
                 description: Text("Herdr has not detected an active agent on this host.")
             )
         } else {
-            ScrollView {
-                LazyVStack(spacing: 10) {
+            List {
+                Group {
                     ForEach(model.agents.filter { $0.status == .blocked }) { agent in
                         agentButton(agent)
                     }
@@ -35,9 +35,14 @@ struct AgentSheet: View {
                         agentButton(agent)
                     }
                 }
-                .padding(16)
             }
-            .refreshable { model.refreshAgents() }
+            .listStyle(.insetGrouped)
+            .refreshable {
+                model.refreshAgents()
+                while model.isLoadingAgents && !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(100))
+                }
+            }
         }
     }
 
@@ -60,7 +65,10 @@ struct AgentSheet: View {
     private func agentButton(_ agent: RunningAgent) -> some View {
         Button {
             model.focusAgent(agent)
-            dismiss()
+            if model.errorMessage == nil {
+                UISelectionFeedbackGenerator().selectionChanged()
+                dismiss()
+            }
         } label: {
             HStack(spacing: 13) {
                 Circle()
@@ -72,7 +80,7 @@ struct AgentSheet: View {
                     HStack {
                         Text(agent.title)
                             .font(.system(.headline, design: .monospaced))
-                            .lineLimit(1)
+                            .lineLimit(2)
                         Spacer()
                         Text(agent.status.label)
                             .font(.caption.weight(.medium))
@@ -83,7 +91,7 @@ struct AgentSheet: View {
                         Text(usage)
                             .font(.system(.caption, design: .monospaced))
                             .foregroundStyle(HerdieTheme.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
                     }
 
                     HStack(spacing: 8) {
@@ -97,20 +105,20 @@ struct AgentSheet: View {
                         }
                     }
                     .font(.caption2)
-                    .foregroundStyle(HerdieTheme.secondary.opacity(0.85))
-                    .lineLimit(1)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
                 }
 
-                Image(systemName: "chevron.right")
+                Image(systemName: agent.focused ? "checkmark.circle.fill" : "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(HerdieTheme.secondary)
             }
-            .padding(15)
-            .herdieCard(cornerRadius: 18)
+            .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(agent.title), \(agent.status.label)")
         .accessibilityHint("Moves the Herdr terminal to this agent")
+        .accessibilityAddTraits(agent.focused ? [.isSelected] : [])
     }
 }
 

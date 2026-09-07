@@ -3,6 +3,78 @@ import XCTest
 
 @MainActor
 final class TerminalViewModelTests: XCTestCase {
+    func testNetworkRestrictionGuidanceDoesNotMisclassifyAuthenticationErrors() {
+        let model = TerminalViewModel(
+            connection: .fixture(), repository: InMemoryConnectionRepository(),
+            credentialVault: InMemoryCredentialVault(), session: InMemorySessionClient()
+        )
+        model.errorMessage = "SSH connection failed: Operation not permitted (os error 1)"
+        XCTAssertTrue(model.mayHaveNetworkRestriction)
+        XCTAssertTrue(model.connectionRecoveryMessage.contains("Local Network"))
+        model.errorMessage = "Permission denied (publickey)"
+        XCTAssertFalse(model.mayHaveNetworkRestriction)
+        XCTAssertFalse(model.connectionRecoveryMessage.contains("Local Network"))
+    }
+
+    func testComposerKeepsDraftWhenSubmissionFails() async {
+        let session = FailingSendSession()
+        let model = TerminalViewModel(connection: .fixture(), repository: InMemoryConnectionRepository(),
+                                      credentialVault: InMemoryCredentialVault(), session: session)
+        await model.poll()
+        model.composerDraft = "Keep my work"
+        XCTAssertFalse(model.sendComposer())
+        XCTAssertEqual(model.composerDraft, "Keep my work")
+        XCTAssertNotNil(model.errorMessage)
+        model.composerDraft = "Keep this line\n"
+        model.autoSendComposerIfNeeded(isEnabled: true)
+        XCTAssertEqual(model.composerDraft, "Keep this line\n")
+    }
+
+    func testConnectionProgressEndsAndAttachmentSurvivesAnInterruption() async throws {
+        let session = InMemorySessionClient()
+        let scheduler = ManualReconnectScheduler()
+        let model = TerminalViewModel(connection: .fixture(), repository: InMemoryConnectionRepository(),
+                                      credentialVault: InMemoryCredentialVault(), session: session,
+                                      reconnectScheduler: scheduler)
+        try model.connect(columns: 80, rows: 24)
+        XCTAssertTrue(model.isConnectionPending)
+        session.events = [.stateChanged(.attached)]
+        await model.poll()
+        XCTAssertFalse(model.isConnectionPending)
+        XCTAssertTrue(model.hasAttached)
+        session.events = [.stateChanged(.reconnecting)]
+        await model.poll()
+        XCTAssertTrue(model.isRecovering)
+        XCTAssertTrue(model.hasAttached)
+    }
+
+    func testAsynchronousConnectionFailureStopsLoading() async throws {
+        let session = InMemorySessionClient()
+        let model = TerminalViewModel(connection: .fixture(), repository: InMemoryConnectionRepository(),
+                                      credentialVault: InMemoryCredentialVault(), session: session)
+        try model.connect(columns: 80, rows: 24)
+        session.events = [.stateChanged(.connecting), .error("Connection rejected")]
+        await model.poll()
+        XCTAssertFalse(model.isRecovering)
+        XCTAssertEqual(model.state, .idle)
+        XCTAssertNotNil(model.errorMessage)
+    }
+
+    func testSubmittedMessageCanBeRecoveredWithoutAutomaticResending() async {
+        let session = InMemorySessionClient()
+        let model = TerminalViewModel(connection: .fixture(), repository: InMemoryConnectionRepository(),
+                                      credentialVault: InMemoryCredentialVault(), session: session)
+        session.events = [.stateChanged(.attached)]
+        await model.poll()
+        model.composerDraft = "Review the change"
+        XCTAssertTrue(model.sendComposer())
+        session.events = [.error("Queued write failed")]
+        await model.poll()
+        XCTAssertEqual(model.lastSubmittedDraft, "Review the change")
+        XCTAssertEqual(session.sent, [Data("Review the change\n".utf8)])
+        XCTAssertTrue(model.composerDraft.isEmpty)
+    }
+
     func testCommandSubmissionDoesNotWaitForBusyCoreAndPreservesOrder() async {
         let queue = DispatchQueue(label: "HerdieTests.busy-core")
         queue.suspend()
@@ -441,4 +513,16 @@ private final class ManualReconnectScheduler: ReconnectScheduling {
         action = nil
         pending?()
     }
+}
+
+@MainActor
+private final class FailingSendSession: SessionClient {
+    func connect(_ request: SessionConnectRequest) throws { }
+    func send(_ data: Data) throws { throw CocoaError(.fileWriteUnknown) }
+    func resize(columns: UInt16, rows: UInt16) throws { }
+    func scroll(lines: Int32) throws { }
+    func listAgents() throws { }
+    func focusAgent(paneID: String) throws { }
+    func poll() async -> [SessionEvent] { [.stateChanged(.attached)] }
+    func disconnect(_ reason: SessionDisconnectReason) { }
 }
