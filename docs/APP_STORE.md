@@ -8,7 +8,7 @@ the project owner's Apple Developer account and App Store Connect record.
 - Set `DEVELOPMENT_TEAM` through local Xcode signing settings. Do not commit a
   personal team identifier to the shared project specification.
 - Create the App Store Connect app with bundle identifier
-  `com.lucasscariot.herdie`, version `0.1.0`, and the intended public support,
+  `com.lucasscariot.herdie`, version `1.0`, and the intended public support,
   privacy-policy, and source-code URLs.
 - Run the complete automated suite and a physical-device smoke test against a
   user-owned SSH host. Exercise password, private-key, Tailscale SSH, unknown
@@ -20,7 +20,11 @@ the project owner's Apple Developer account and App Store Connect record.
 
 ## Privacy
 
-`PrivacyInfo.xcprivacy` declares no tracking or collected data and records the
+`PrivacyInfo.xcprivacy` declares no tracking. It discloses Other Data Types for
+app functionality because GitHub Pages retains IP addresses for security when
+serving the About configuration request. The IP data is conservatively marked
+as linked to the user. SSH credentials and terminal content are not sent to the
+developer. The manifest also records the
 required-reason use of UserDefaults as `CA92.1`. App Store privacy answers must
 remain consistent with the shipped binary. Revisit both declarations before
 adding analytics, crash reporting, accounts, a relay, or any hosted service.
