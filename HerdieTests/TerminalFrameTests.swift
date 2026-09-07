@@ -2,6 +2,34 @@ import XCTest
 @testable import Herdie
 
 final class TerminalFrameTests: XCTestCase {
+    @MainActor
+    func testKeyboardResizeKeepsLastLineVisibleBeforeRemoteFrameArrives() {
+        let view = TerminalCanvasView(frame: CGRect(x: 0, y: 0, width: 500, height: 800))
+        var frame = TerminalFrame.fixture(contents: "https://example.com")
+        frame.rows = 21
+        frame.cursor.row = 20
+        let lastLine = frame.cells
+        frame.cells = (0..<21).flatMap { row in
+            lastLine.map { cell in
+                var cell = cell
+                cell.row = UInt16(row)
+                if row < 20 { cell.contents = " " }
+                return cell
+            }
+        }
+        view.terminalFrame = frame
+        view.bottomClearance = 0
+        // The keyboard shrinks the viewport before SSH sends the resized frame.
+        view.frame.size.height = 100
+        var opened: URL?
+        view.onOpenLink = { opened = $0 }
+        let lastLineIsVisible = (0..<100).contains { y in
+            view.openLink(at: CGPoint(x: 1, y: CGFloat(y)))
+        }
+        XCTAssertTrue(lastLineIsVisible)
+        XCTAssertEqual(opened?.absoluteString, "https://example.com")
+    }
+
     func testDetectsWebURLsWithoutTrailingPunctuationAndRejectsOtherSchemes() {
         let text = "See https://example.com/path?q=one&n=2, http://localhost:3000/test. mailto:a@example.com file:///tmp/test javascript:alert(1)"
         XCTAssertEqual(TerminalLinkDetector.matches(in: text).map { $0.url.absoluteString }, [

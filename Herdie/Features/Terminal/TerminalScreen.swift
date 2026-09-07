@@ -45,10 +45,28 @@ struct TerminalScreen: View {
 
     var body: some View {
         NavigationStack {
-            LiveTerminalCanvas(model: model, preferences: environment.preferences, bottomClearance: showsDock ? 76 : 0, onScrollDirection: { rows in
-                if rows != 0 { dockCollapsed = rows > 0 }
-            }, onResize: handleResize, onPaste: paste, onFocusChanged: { keyboardVisible = $0 })
+            GeometryReader { geometry in
+                LiveTerminalCanvas(
+                    model: model,
+                    preferences: environment.preferences,
+                    // Remote mouse-wheel scrolling does not update local scrollbackOffset.
+                    // Release the prompt clearance while browsing behind the collapsed dock.
+                    bottomClearance: keyboardVisible || dockCollapsed ? 0 : geometry.safeAreaInsets.bottom + (showsDock ? 76 : 0),
+                    onScrollDirection: { rows in
+                        if rows != 0 { dockCollapsed = rows > 0 }
+                    },
+                    onResize: handleResize,
+                    onPaste: paste,
+                    onFocusChanged: { focused in
+                        keyboardVisible = focused
+                        if focused { dockCollapsed = false }
+                    }
+                )
+                // Extend only the canvas. Controls stay inside the safe area,
+                // and the keyboard still reduces the terminal's available height.
                 .padding(.horizontal, 12)
+                .ignoresSafeArea(.container, edges: .vertical)
+            }
                 .accessibilityIdentifier("terminal-canvas")
                 .opacity(model.hasAttached || !loadingVisible ? 1 : 0)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: model.hasAttached)
@@ -86,7 +104,13 @@ struct TerminalScreen: View {
                     }
                 }
                 .overlay(alignment: .bottom) {
-                    if showsDock { navigationDock.padding(.bottom, 8) }
+                    ZStack {
+                        if showsDock {
+                            navigationDock.padding(.bottom, 8)
+                                .transition(.opacity)
+                        }
+                    }
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: showsDock)
                 }
                 .background(terminalBackground)
                 .toolbar {
@@ -97,8 +121,7 @@ struct TerminalScreen: View {
                     ToolbarItem(placement: .topBarTrailing) { sessionMenu }
                 }
                 .toolbar(focusMode ? .hidden : .visible, for: .navigationBar)
-                .toolbarBackground(terminalBackground, for: .navigationBar)
-                .toolbarBackground(.visible, for: .navigationBar)
+                .toolbarBackground(.hidden, for: .navigationBar)
                 .navigationBarTitleDisplayMode(.inline)
         }
         .preferredColorScheme(environment.preferences.appearance.colorScheme)
@@ -244,6 +267,9 @@ struct TerminalScreen: View {
                 }
                 Text(stateLabel).font(.caption).foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .background(.regularMaterial, in: Capsule())
         }
         .foregroundStyle(.primary)
         .accessibilityLabel("Herdr workspaces")

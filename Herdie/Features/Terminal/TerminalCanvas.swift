@@ -146,13 +146,15 @@ final class TerminalCanvasView: UIView, UIKeyInput, UIContextMenuInteractionDele
         didSet { if oldValue != bottomClearance { setNeedsDisplay() } }
     }
     private func contentOffset(for frame: TerminalFrame) -> CGFloat {
-        guard frame.scrollbackOffset == 0, bottomClearance > 0 else { return 0 }
+        // Keep the last line in view while a keyboard resize is awaiting a remote frame,
+        // even when there is no floating dock clearance.
+        guard frame.scrollbackOffset == 0 else { return 0 }
         let lastTextRow = frame.cells.last(where: { !$0.contents.trimmingCharacters(in: .whitespaces).isEmpty })?.row ?? 0
         let lastRow = max(frame.cursor.row, lastTextRow)
         return max(0, CGFloat(Int(lastRow) + 1) * cellMetrics.height - max(0, bounds.height - bottomClearance))
     }
     private var contentOffset: CGFloat {
-        guard terminalFrame.scrollbackOffset == 0, bottomClearance > 0 else { return 0 }
+        guard terminalFrame.scrollbackOffset == 0 else { return 0 }
         let lastRow = max(terminalFrame.cursor.row, lastTextRow)
         return max(0, CGFloat(Int(lastRow) + 1) * cellMetrics.height - max(0, bounds.height - bottomClearance))
     }
