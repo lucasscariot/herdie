@@ -309,7 +309,7 @@ struct AboutView: View {
                 VStack(spacing: 5) {
                     Text("Herdie")
                         .font(.largeTitle.bold())
-                    Text("Version 0.1.0")
+                    Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")")
                         .foregroundStyle(HerdieTheme.secondary)
                 }
                 Text("An independent, open-source Herdr client built with SwiftUI and a portable Rust SSH core.")
@@ -335,6 +335,9 @@ struct AboutView: View {
                         .foregroundStyle(HerdieTheme.secondary)
                     makerLink("Explore my work", detail: "lucas.scariot.fr", symbol: "globe", url: "https://lucas.scariot.fr/?utm_source=herdie&utm_medium=app&utm_campaign=maker")
                     makerLink("Follow on X", detail: "@lucas_scrt", symbol: "bubble.left.and.bubble.right", url: "https://x.com/lucas_scrt")
+                    makerLink("Support", detail: "Connection help and contact", symbol: "questionmark.circle", url: "https://lucasscariot.github.io/herdie/support.html")
+                    makerLink("Privacy policy", detail: "How Herdie handles your data", symbol: "hand.raised", url: "https://lucasscariot.github.io/herdie/privacy.html")
+                    makerLink("Star on GitHub", detail: "Enjoy Herdie? Give the project a star.", symbol: "star", url: "https://github.com/lucasscariot/herdie")
                     if support.isEnabled {
                         makerLink("Buy me a coffee", detail: "Optional support. Herdie stays free.", symbol: "cup.and.saucer", url: "https://buymeacoffee.com/lucasscariot")
                     }
