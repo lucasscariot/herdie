@@ -189,7 +189,7 @@ final class TerminalViewModel {
     func sendText(_ text: String) {
         guard state == .attached, !text.isEmpty else { return }
         let data: Data
-        if controlArmed, let byte = controlByte(for: text) {
+        if controlArmed, let byte = TerminalKeyEncoder.controlByte(for: text) {
             data = Data([byte])
             controlArmed = false
         } else {
@@ -212,7 +212,8 @@ final class TerminalViewModel {
     @discardableResult
     func sendComposer() -> Bool {
         guard state == .attached, !composerDraft.isEmpty else { return false }
-        guard send(Data((composerDraft + "\n").utf8)) else { return false }
+        // CR submits; newlines inside the draft stay LF so agents keep them as line breaks.
+        guard send(Data((composerDraft + "\r").utf8)) else { return false }
         controlArmed = false
         lastSubmittedDraft = composerDraft
         composerDraft = ""
@@ -221,7 +222,7 @@ final class TerminalViewModel {
 
     func autoSendComposerIfNeeded(isEnabled: Bool) {
         guard state == .attached, isEnabled, composerDraft.hasSuffix("\n") else { return }
-        if send(Data(composerDraft.utf8)) {
+        if send(Data((String(composerDraft.dropLast()) + "\r").utf8)) {
             lastSubmittedDraft = composerDraft
             controlArmed = false
             composerDraft = ""
@@ -468,15 +469,5 @@ final class TerminalViewModel {
         reconnectAttempt = 0
         reconnectScheduled = false
         stabilityResetScheduled = false
-    }
-
-    private func controlByte(for text: String) -> UInt8? {
-        guard let scalar = text.unicodeScalars.first, scalar.isASCII else { return nil }
-        let value = UInt8(scalar.value)
-        switch value {
-        case 0x40 ... 0x5F: return value & 0x1F
-        case 0x61 ... 0x7A: return (value - 0x20) & 0x1F
-        default: return nil
-        }
     }
 }

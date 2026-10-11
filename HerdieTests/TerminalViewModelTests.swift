@@ -71,7 +71,7 @@ final class TerminalViewModelTests: XCTestCase {
         session.events = [.error("Queued write failed")]
         await model.poll()
         XCTAssertEqual(model.lastSubmittedDraft, "Review the change")
-        XCTAssertEqual(session.sent, [Data("Review the change\n".utf8)])
+        XCTAssertEqual(session.sent, [Data("Review the change\r".utf8)])
         XCTAssertTrue(model.composerDraft.isEmpty)
     }
 
@@ -422,7 +422,7 @@ final class TerminalViewModelTests: XCTestCase {
 
         model.autoSendComposerIfNeeded(isEnabled: true)
 
-        XCTAssertEqual(session.sent, [Data("hello from dictation\n".utf8)])
+        XCTAssertEqual(session.sent, [Data("hello from dictation\r".utf8)])
         XCTAssertEqual(model.composerDraft, "")
     }
 

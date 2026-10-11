@@ -36,6 +36,51 @@ struct TerminalPanNavigation {
     }
 }
 
+/// Encodes hardware-keyboard presses the iOS text system would drop or mistranslate.
+enum TerminalKeyEncoder {
+    static func bytes(keyCode: UIKeyboardHIDUsage, modifiers: UIKeyModifierFlags, characters: String) -> [UInt8]? {
+        guard !modifiers.contains(.command) else { return nil }
+        let shift = modifiers.contains(.shift), alt = modifiers.contains(.alternate), control = modifiers.contains(.control)
+        // xterm modifier parameter: 1 + Shift(1) + Alt(2) + Ctrl(4).
+        let modifier = 1 + (shift ? 1 : 0) + (alt ? 2 : 0) + (control ? 4 : 0)
+        func csi(_ final: String, number: Int = 1) -> [UInt8] {
+            let parameters = modifier > 1 ? "\(number);\(modifier)" : (final == "~" ? "\(number)" : "")
+            return [0x1B, 0x5B] + Array((parameters + final).utf8)
+        }
+        switch keyCode {
+        case .keyboardReturnOrEnter, .keypadEnter: return shift ? [0x0A] : [0x0D]
+        case .keyboardEscape: return [0x1B]
+        case .keyboardTab: return shift ? [0x1B, 0x5B, 0x5A] : [0x09]
+        // Plain Backspace stays with the text system (deleteBackward) so it keeps key repeat.
+        case .keyboardDeleteOrBackspace: return alt ? [0x1B, 0x7F] : (control ? [0x08] : nil)
+        case .keyboardUpArrow: return csi("A")
+        case .keyboardDownArrow: return csi("B")
+        case .keyboardRightArrow: return csi("C")
+        case .keyboardLeftArrow: return csi("D")
+        case .keyboardHome: return csi("H")
+        case .keyboardEnd: return csi("F")
+        case .keyboardInsert: return csi("~", number: 2)
+        case .keyboardDeleteForward: return csi("~", number: 3)
+        case .keyboardPageUp: return csi("~", number: 5)
+        case .keyboardPageDown: return csi("~", number: 6)
+        default: break
+        }
+        guard control, let byte = controlByte(for: characters) else { return nil }
+        return alt ? [0x1B, byte] : [byte]
+    }
+
+    static func controlByte(for text: String) -> UInt8? {
+        guard let scalar = text.unicodeScalars.first, scalar.isASCII else { return nil }
+        let value = UInt8(scalar.value)
+        switch value {
+        case 0x20: return 0x00
+        case 0x40 ... 0x5F: return value & 0x1F
+        case 0x61 ... 0x7A: return (value - 0x20) & 0x1F
+        default: return nil
+        }
+    }
+}
+
 struct TerminalCanvas: UIViewRepresentable {
     var terminalFrame: TerminalFrame
     var theme: TerminalTheme
@@ -297,7 +342,8 @@ final class TerminalCanvasView: UIView, UIKeyInput, UIContextMenuInteractionDele
     var keyboardAppearance: UIKeyboardAppearance = .default
 
     func insertText(_ text: String) {
-        onInput?(Data(text.utf8))
+        // Return arrives as LF, but terminals expect CR to submit; LF means "new line" to TUIs.
+        onInput?(Data(text.replacingOccurrences(of: "\n", with: "\r").utf8))
     }
 
     func deleteBackward() {
@@ -391,16 +437,8 @@ final class TerminalCanvasView: UIView, UIKeyInput, UIContextMenuInteractionDele
             onPaste?()
             return
         }
-        let bytes: [UInt8]? = switch key.keyCode {
-        case .keyboardUpArrow: [0x1B, 0x5B, 0x41]
-        case .keyboardDownArrow: [0x1B, 0x5B, 0x42]
-        case .keyboardRightArrow: [0x1B, 0x5B, 0x43]
-        case .keyboardLeftArrow: [0x1B, 0x5B, 0x44]
-        case .keyboardEscape: [0x1B]
-        case .keyboardTab: [0x09]
-        default: nil
-        }
-        if let bytes {
+        if let bytes = TerminalKeyEncoder.bytes(keyCode: key.keyCode, modifiers: key.modifierFlags,
+                                                characters: key.charactersIgnoringModifiers) {
             onInput?(Data(bytes))
         } else {
             super.pressesBegan(presses, with: event)

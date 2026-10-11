@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import Herdie
 
 final class TerminalFrameTests: XCTestCase {
@@ -207,5 +208,46 @@ private extension TerminalCell {
             underline: false,
             inverse: false
         )
+    }
+}
+
+final class TerminalKeyEncoderTests: XCTestCase {
+    private func bytes(_ key: UIKeyboardHIDUsage, _ modifiers: UIKeyModifierFlags = [], _ characters: String = "") -> [UInt8]? {
+        TerminalKeyEncoder.bytes(keyCode: key, modifiers: modifiers, characters: characters)
+    }
+
+    func testReturnSubmitsAndShiftReturnInsertsNewLine() {
+        XCTAssertEqual(bytes(.keyboardReturnOrEnter), [0x0D])
+        XCTAssertEqual(bytes(.keypadEnter), [0x0D])
+        XCTAssertEqual(bytes(.keyboardReturnOrEnter, .shift), [0x0A])
+    }
+
+    func testControlChordsSendControlBytes() {
+        XCTAssertEqual(bytes(.keyboardB, .control, "b"), [0x02])
+        XCTAssertEqual(bytes(.keyboardC, [.control, .shift], "C"), [0x03])
+        XCTAssertEqual(bytes(.keyboardSpacebar, .control, " "), [0x00])
+        XCTAssertEqual(bytes(.keyboardH, [.control, .alternate], "h"), [0x1B, 0x08])
+        XCTAssertNil(bytes(.keyboardB, [], "b"))
+        XCTAssertNil(bytes(.keyboardV, .command, "v"))
+    }
+
+    func testNavigationKeysUseXtermSequences() {
+        XCTAssertEqual(bytes(.keyboardLeftArrow), Array("\u{1B}[D".utf8))
+        XCTAssertEqual(bytes(.keyboardLeftArrow, .control), Array("\u{1B}[1;5D".utf8))
+        XCTAssertEqual(bytes(.keyboardHome), Array("\u{1B}[H".utf8))
+        XCTAssertEqual(bytes(.keyboardDeleteForward), Array("\u{1B}[3~".utf8))
+        XCTAssertEqual(bytes(.keyboardPageUp, .shift), Array("\u{1B}[5;2~".utf8))
+        XCTAssertEqual(bytes(.keyboardTab, .shift), Array("\u{1B}[Z".utf8))
+        XCTAssertEqual(bytes(.keyboardDeleteOrBackspace, .alternate), [0x1B, 0x7F])
+        XCTAssertNil(bytes(.keyboardDeleteOrBackspace))
+    }
+
+    @MainActor
+    func testSoftwareKeyboardReturnSubmits() {
+        let view = TerminalCanvasView()
+        var sent = Data()
+        view.onInput = { sent.append($0) }
+        view.insertText("ls\n")
+        XCTAssertEqual(sent, Data("ls\r".utf8))
     }
 }
