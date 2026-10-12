@@ -23,6 +23,16 @@ struct SettingsView: View {
                     }
                     .accessibilityLabel("Terminal appearance")
                     NavigationLink {
+                        ScrollSettingsView(preferences: preferences)
+                    } label: {
+                        SettingsRow(
+                            title: "Scrolling",
+                            subtitle: "Tune how touch scrolling responds",
+                            symbol: "arrow.up.and.down"
+                        )
+                    }
+                    .accessibilityLabel("Scrolling")
+                    NavigationLink {
                         ComposerSettingsView(preferences: preferences)
                     } label: {
                         SettingsRow(
@@ -162,6 +172,65 @@ struct ComposerSettingsView: View {
         .scrollContentBackground(.hidden)
         .background(HerdieTheme.background)
         .navigationTitle("Composer")
+    }
+}
+
+struct ScrollSettingsView: View {
+    @Bindable var preferences: AppPreferences
+
+    var body: some View {
+        Form {
+            ScrollSlider(
+                title: "Line trigger",
+                value: $preferences.scrolling.trigger,
+                range: TerminalScrollSettings.triggerRange,
+                step: 0.05,
+                valueText: "\(Int((preferences.scrolling.trigger * 100).rounded()))% of a line",
+                detail: "How far your finger moves before the next line scrolls. Lower moves lines sooner."
+            )
+            ScrollSlider(
+                title: "Scroll speed",
+                value: $preferences.scrolling.speed,
+                range: TerminalScrollSettings.speedRange,
+                step: 0.1,
+                valueText: "\(preferences.scrolling.speed.formatted(.number.precision(.fractionLength(1))))×",
+                detail: "Lines scrolled for each line of finger travel."
+            )
+            ScrollSlider(
+                title: "Dead zone",
+                value: $preferences.scrolling.deadZone,
+                range: TerminalScrollSettings.deadZoneRange,
+                step: 1,
+                valueText: "\(Int(preferences.scrolling.deadZone)) pt",
+                detail: "How far a drag moves before Herdie decides between scrolling and swiping panes. Lower starts scrolling sooner but may mistake swipes for scrolls."
+            )
+            Section {
+                Button("Reset to defaults") { preferences.scrolling = TerminalScrollSettings() }
+                    .disabled(preferences.scrolling == TerminalScrollSettings())
+            }
+        }
+        .navigationTitle("Scrolling")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ScrollSlider: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+    let valueText: String
+    let detail: String
+
+    var body: some View {
+        Section {
+            LabeledContent(title, value: valueText)
+            Slider(value: $value, in: range, step: step)
+                .accessibilityLabel(title)
+                .accessibilityValue(valueText)
+        } footer: {
+            Text(detail)
+        }
     }
 }
 

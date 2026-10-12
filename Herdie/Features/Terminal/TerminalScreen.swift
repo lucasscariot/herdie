@@ -444,6 +444,7 @@ private struct LiveTerminalCanvas: View {
             theme: preferences.terminalTheme,
             fontSize: CGFloat(preferences.terminalFontSize),
             bottomClearance: bottomClearance,
+            scrollSettings: preferences.scrolling,
             toolbarActions: preferences.toolbarActions.filter { $0 != .keyboard && $0 != .composer },
             controlArmed: model.controlArmed,
             onToolbarAction: model.perform,

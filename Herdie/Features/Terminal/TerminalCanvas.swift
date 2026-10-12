@@ -4,9 +4,12 @@ import UIKit
 struct TerminalScrollAccumulator {
     private var emittedRows = 0
 
-    mutating func consume(translationY: CGFloat, cellHeight: CGFloat) -> Int {
-        guard cellHeight > 0 else { return 0 }
-        let totalRows = Int(translationY / cellHeight)
+    mutating func consume(translationY: CGFloat, cellHeight: CGFloat, settings: TerminalScrollSettings) -> Int {
+        guard cellHeight > 0, settings.speed > 0 else { return 0 }
+        let step = cellHeight / settings.speed
+        // Each line fires once the finger covers `trigger` of a step; 0.5 rounds, 1.0 truncates.
+        let rows = Int(abs(translationY) / step + 1 - settings.trigger)
+        let totalRows = translationY < 0 ? -rows : rows
         let delta = totalRows - emittedRows
         emittedRows = totalRows
         return delta
@@ -21,8 +24,8 @@ struct TerminalPanNavigation {
     enum Axis { case horizontal, vertical }
     private var axis: Axis?
 
-    mutating func update(_ translation: CGPoint) -> Bool {
-        if axis == nil, max(abs(translation.x), abs(translation.y)) >= 10 {
+    mutating func update(_ translation: CGPoint, deadZone: CGFloat) -> Bool {
+        if axis == nil, max(abs(translation.x), abs(translation.y)) >= deadZone {
             axis = abs(translation.x) > abs(translation.y) * 1.5 ? .horizontal : .vertical
         }
         return axis == .vertical
@@ -41,6 +44,7 @@ struct TerminalCanvas: UIViewRepresentable {
     var theme: TerminalTheme
     var fontSize: CGFloat
     var bottomClearance: CGFloat = 0
+    var scrollSettings: TerminalScrollSettings
     var toolbarActions: [ToolbarAction]
     var controlArmed: Bool
     var onToolbarAction: (ToolbarAction) -> Void
@@ -91,6 +95,7 @@ struct TerminalCanvas: UIViewRepresentable {
         view.bottomClearance = bottomClearance
         view.onResize = onResize
         view.onScroll = onScroll
+        view.scrollSettings = scrollSettings
         view.onSwitchPane = onSwitchPane
         view.onPaste = onPaste
         view.onFocusChanged = onFocusChanged
@@ -128,6 +133,7 @@ final class TerminalCanvasView: UIView, UIKeyInput, UIContextMenuInteractionDele
     var onInput: ((Data) -> Void)?
     var onResize: ((UInt16, UInt16) -> Void)?
     var onScroll: ((Int) -> Void)?
+    var scrollSettings = TerminalScrollSettings()
     var onSwitchPane: ((Bool) -> Void)?
     var onPaste: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
@@ -474,10 +480,11 @@ final class TerminalCanvasView: UIView, UIKeyInput, UIContextMenuInteractionDele
             panNavigation = TerminalPanNavigation()
         case .changed, .ended:
             let translation = gesture.translation(in: self)
-            if panNavigation.update(translation) {
+            if panNavigation.update(translation, deadZone: scrollSettings.deadZone) {
                 let rows = scrollAccumulator.consume(
                     translationY: translation.y,
-                    cellHeight: cellMetrics.height
+                    cellHeight: cellMetrics.height,
+                    settings: scrollSettings
                 )
                 if rows != 0 {
                     onScroll?(rows)

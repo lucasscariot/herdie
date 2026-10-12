@@ -15,6 +15,27 @@ enum AppAppearance: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+struct TerminalScrollSettings: Codable, Equatable {
+    static let triggerRange = 0.1...1.0
+    static let speedRange = 0.5...3.0
+    static let deadZoneRange = 2.0...20.0
+
+    /// Fraction of a line the finger travels before the next line scrolls.
+    var trigger = 0.5
+    /// Lines scrolled per line of finger travel.
+    var speed = 1.0
+    /// Points a drag moves before it commits to scrolling or switching panes.
+    var deadZone = 10.0
+
+    var clamped: Self {
+        Self(
+            trigger: min(max(trigger, Self.triggerRange.lowerBound), Self.triggerRange.upperBound),
+            speed: min(max(speed, Self.speedRange.lowerBound), Self.speedRange.upperBound),
+            deadZone: min(max(deadZone, Self.deadZoneRange.lowerBound), Self.deadZoneRange.upperBound)
+        )
+    }
+}
+
 @MainActor
 @Observable
 final class AppPreferences {
@@ -29,6 +50,7 @@ final class AppPreferences {
     var appearance: AppAppearance { didSet { save() } }
     var terminalTheme: TerminalTheme { didSet { save() } }
     var terminalFontSize: Double { didSet { save() } }
+    var scrolling: TerminalScrollSettings { didSet { save() } }
     var composerMode: Bool { didSet { save() } }
     var autoSend: Bool { didSet { save() } }
     var toolbarActions: [ToolbarAction] { didSet { save() } }
@@ -50,6 +72,7 @@ final class AppPreferences {
             appearance = stored.appearance ?? .system
             terminalTheme = stored.terminalTheme ?? .herdie
             terminalFontSize = min(max(stored.terminalFontSize ?? 14, 11), 20)
+            scrolling = (stored.scrolling ?? TerminalScrollSettings()).clamped
             autoSend = stored.autoSend
             toolbarActions = stored.toolbarActions.isEmpty ? ToolbarAction.defaults : stored.toolbarActions
         } else {
@@ -57,6 +80,7 @@ final class AppPreferences {
             appearance = .system
             terminalTheme = .herdie
             terminalFontSize = 14
+            scrolling = TerminalScrollSettings()
             autoSend = false
             toolbarActions = ToolbarAction.defaults
         }
@@ -75,7 +99,8 @@ final class AppPreferences {
             toolbarActions: toolbarActions,
             appearance: appearance,
             terminalTheme: terminalTheme,
-            terminalFontSize: terminalFontSize
+            terminalFontSize: terminalFontSize,
+            scrolling: scrolling
         )
         if let data = try? JSONEncoder().encode(stored) {
             defaults.set(data, forKey: key)
@@ -89,5 +114,6 @@ final class AppPreferences {
         var appearance: AppAppearance?
         var terminalTheme: TerminalTheme?
         var terminalFontSize: Double?
+        var scrolling: TerminalScrollSettings?
     }
 }

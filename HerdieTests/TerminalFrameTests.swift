@@ -95,15 +95,15 @@ final class TerminalFrameTests: XCTestCase {
 
     func testHorizontalSwipesSwitchOnceAndVerticalGesturesStayScrolling() {
         var pan = TerminalPanNavigation()
-        XCTAssertFalse(pan.update(CGPoint(x: -25, y: 3)))
+        XCTAssertFalse(pan.update(CGPoint(x: -25, y: 3), deadZone: 10))
         XCTAssertEqual(pan.finish(CGPoint(x: -90, y: 10)), true)
         XCTAssertNil(pan.finish(CGPoint(x: -90, y: 10)))
-        XCTAssertFalse(pan.update(CGPoint(x: 25, y: 3)))
+        XCTAssertFalse(pan.update(CGPoint(x: 25, y: 3), deadZone: 10))
         XCTAssertEqual(pan.finish(CGPoint(x: 90, y: 10)), false)
-        XCTAssertTrue(pan.update(CGPoint(x: 2, y: 20)))
-        XCTAssertTrue(pan.update(CGPoint(x: 90, y: 25)))
+        XCTAssertTrue(pan.update(CGPoint(x: 2, y: 20), deadZone: 10))
+        XCTAssertTrue(pan.update(CGPoint(x: 90, y: 25), deadZone: 10))
         XCTAssertNil(pan.finish(CGPoint(x: 90, y: 25)))
-        XCTAssertFalse(pan.update(CGPoint(x: 20, y: 0)))
+        XCTAssertFalse(pan.update(CGPoint(x: 20, y: 0), deadZone: 10))
         XCTAssertNil(pan.finish(CGPoint(x: 40, y: 0)))
     }
 
@@ -151,13 +151,31 @@ final class TerminalFrameTests: XCTestCase {
 
     func testScrollGestureUsesNaturalIOSDirectionAndEmitsOnlyNewWholeRows() {
         var accumulator = TerminalScrollAccumulator()
+        let settings = TerminalScrollSettings()
 
-        XCTAssertEqual(accumulator.consume(translationY: -8, cellHeight: 18), 0)
-        XCTAssertEqual(accumulator.consume(translationY: -20, cellHeight: 18), -1)
-        XCTAssertEqual(accumulator.consume(translationY: -57, cellHeight: 18), -2)
-        XCTAssertEqual(accumulator.consume(translationY: -40, cellHeight: 18), 1)
+        XCTAssertEqual(accumulator.consume(translationY: -8, cellHeight: 18, settings: settings), 0)
+        XCTAssertEqual(accumulator.consume(translationY: -10, cellHeight: 18, settings: settings), -1)
+        XCTAssertEqual(accumulator.consume(translationY: -57, cellHeight: 18, settings: settings), -2)
+        XCTAssertEqual(accumulator.consume(translationY: -40, cellHeight: 18, settings: settings), 1)
         accumulator.reset()
-        XCTAssertEqual(accumulator.consume(translationY: 20, cellHeight: 18), 1)
+        XCTAssertEqual(accumulator.consume(translationY: 20, cellHeight: 18, settings: settings), 1)
+    }
+
+    func testScrollSettingsTuneTriggerPointAndSpeed() {
+        var accumulator = TerminalScrollAccumulator()
+        let wholeLine = TerminalScrollSettings(trigger: 1, speed: 1, deadZone: 10)
+        XCTAssertEqual(accumulator.consume(translationY: -17, cellHeight: 18, settings: wholeLine), 0)
+        XCTAssertEqual(accumulator.consume(translationY: -18, cellHeight: 18, settings: wholeLine), -1)
+
+        accumulator.reset()
+        let fast = TerminalScrollSettings(trigger: 0.5, speed: 2, deadZone: 10)
+        XCTAssertEqual(accumulator.consume(translationY: 5, cellHeight: 18, settings: fast), 1)
+        XCTAssertEqual(accumulator.consume(translationY: 27, cellHeight: 18, settings: fast), 2)
+
+        XCTAssertEqual(
+            TerminalScrollSettings(trigger: 0, speed: 9, deadZone: -1).clamped,
+            TerminalScrollSettings(trigger: 0.1, speed: 3, deadZone: 2)
+        )
     }
 }
 
